@@ -2,7 +2,8 @@
 
 一个**单文件、离线可用**的旅行攻略网站。首页是攻略卡片墙，点进去是逐日路书详情。
 
-- 站点地址（开启 Pages 后）：`https://<你的用户名>.github.io/<仓库名>/`
+- **线上地址：https://creamshi0208.github.io/TianTravel/**
+- 仓库：https://github.com/creamshi0208/TianTravel
 - 全部内容在 `index.html` 一个文件里，图片已内联为 base64，**双击即可打开，无需服务器**
 
 ---
@@ -13,7 +14,11 @@
 
 ---
 
-## 二、推送到 GitHub
+## 二、推送到 GitHub（✅ 已完成，以下留作参考）
+
+> 现状：本地 `web/` 已是 git 仓库，远端为 `origin` → `https://github.com/creamshi0208/TianTravel.git`，
+> 分支 `main`，Pages 已开启并生效。**日常只需看第三节的「后续更新」。**
+> 以下步骤是当初从零搭的时候的流程，换机器或新建仓库时照做即可。
 
 > 前提：你已注册 GitHub 账号并登录。仓库需要是 **Public（公开）** 才能免费用 Pages。
 
@@ -84,10 +89,10 @@ git config --global credential.helper manager
 cd /d/BED/旅游攻略/web
 git add .
 git commit -m "更新：xxx"
-git push
+git push          # 若未配凭据助手，见第六节的带 Token 推送写法
 ```
 
-Pages 会自动重新部署。
+Pages 会自动重新部署，约 1–2 分钟生效。
 
 ---
 
@@ -141,26 +146,36 @@ python tools/build_web.py        # 生成网站
 
 ---
 
-## 六、怎么让我直接帮你推到 GitHub
+## 六、仓库与凭据现状（已配置好）
 
-我现在就能执行推送，但需要你提供三样东西：
-
-| 需要什么 | 从哪里拿 |
+| 项目 | 值 |
 |---|---|
-| **GitHub 用户名** | https://github.com/settings/profile → 最上面的 Username |
-| **仓库名** | 还没建的话告诉我名字（比如 `travel-guide`），我来建；已建的话给我仓库地址 |
-| **Personal Access Token** | https://github.com/settings/tokens → Generate new token (classic) → 勾 `repo` → 生成后复制 `ghp_...` |
+| GitHub 账号 | `creamshi0208` |
+| 仓库 | `creamshi0208/TianTravel`（Public，Pages 免费用） |
+| 远端 | `origin` → `https://github.com/creamshi0208/TianTravel.git` |
+| 分支 | `main` |
+| Pages | `Deploy from a branch` → `main` / `(root)` → https://creamshi0208.github.io/TianTravel/ |
+| 提交身份 | 本仓库局部配置为 `creamshi0208` / `creamshi0208@users.noreply.github.com`（不动你的全局 `lianye`） |
 
-拿到之后我就能一条龙做完：本地提交 → 建仓库 → 推送 → 开 Pages，最后给你线上地址。
+**推送方式**：这台机器上仍无凭据助手/SSH key，所以每次推送需要带 Token。
+用一次性 URL 推送（Token 不会被写进 `.git/config`）：
 
-**关于 Token 的安全提醒**：它等同于你的仓库读写权限。建议
+```bash
+cd /d/BED/旅游攻略/web
+git push "https://creamshi0208:<你的Token>@github.com/creamshi0208/TianTravel.git" main
+```
+
+想省掉每次输 Token，任选其一：
+
+- 开通 Windows 凭据缓存：`git config --global credential.helper manager`（下次输入后自动记住）
+- 装 GitHub CLI：`winget install GitHub.cli` → `gh auth login` 走浏览器授权，之后免 Token
+
+**Token 安全提醒**：等同于仓库读写权限。
 
 - 有效期选 **7 天或 90 天**，别选 No expiration
-- 只勾 **`repo`**，不要勾 `delete_repo`、`admin:*` 之类的
-- 用完随时可以回到同一页面点 **Revoke** 撤销
-- 不要贴在公开的群里 / 截图里
-
-**不想手搓 Token 的替代方案**：装 GitHub CLI（`winget install GitHub.cli`），然后 `gh auth login` 走一次浏览器授权，之后我就不需要碰任何 Token 了。你想走这条路的话，告诉我，我来装。
+- 只勾 **`repo`**，不要勾 `delete_repo`、`admin:*`
+- 用完随时回 https://github.com/settings/tokens 点 **Revoke** 撤销
+- **只勾过一次、只在本机用过，务必及时撤销；不要贴在公开的群里 / 截图里**
 
 ---
 
