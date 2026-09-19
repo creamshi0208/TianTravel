@@ -1,2 +1,3 @@
 .workbuddy/
 *.log
+.gh_token
