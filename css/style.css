@@ -1,6 +1,11 @@
 
-:root{--ink:#1b1f24;--muted:#6b7280;--line:#eaecef;--bg:#f4f5f7;
---brand:#c0392b;--brand2:#e07b39;--brand-soft:#fdf1ef;--radius:16px;--ph-lg:185px;--ph-sm:150px}
+:root{--ink:#1f2937;--ink-2:#6b7280;--ink-3:#9aa4b2;--muted:#6b7280;
+--line:#e6ecf2;--bg:#f7f9fc;--bg-soft:#eef4f8;--card:#fff;
+--brand:#0ea5a4;--brand-dark:#0b7f80;--brand2:#0284c7;--brand-soft:#e6f6f6;
+--warm:#f59e0b;--danger:#e11d48;
+--radius:16px;--radius-s:10px;--radius-l:20px;
+--shadow-s:0 1px 2px rgba(16,40,60,.05),0 2px 8px rgba(16,40,60,.05);
+--ph-lg:185px;--ph-sm:150px}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 a,button{-webkit-tap-highlight-color:transparent}
@@ -17,30 +22,40 @@ strong{color:var(--brand)}
 .brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--ink);
 font-weight:700;font-size:16px;letter-spacing:.5px}
 .brand i{width:23px;height:23px;border-radius:7px;font-style:normal;color:#fff;font-size:12px;
-background:linear-gradient(135deg,var(--brand),var(--brand2));
+background:linear-gradient(140deg,var(--brand),var(--brand2));
 display:flex;align-items:center;justify-content:center}
 .tb-nav{margin-left:auto;display:flex;gap:4px}
 .tb-nav a{text-decoration:none;font-size:14px;color:#555;padding:6px 12px;border-radius:8px}
 .tb-nav a:hover{background:var(--brand-soft);color:var(--brand)}
 /* 详情页：品牌与导航让位给「返回全部攻略」，按钮随顶栏常驻，不随正文滚走 */
 .tb-back{display:none;align-items:center;gap:7px;text-decoration:none;font-size:14.5px;
-font-weight:700;color:var(--brand);background:var(--brand-soft);border:1px solid #f0dbd7;
+font-weight:700;color:var(--brand);background:var(--brand-soft);border:1px solid #cdeceb;
 padding:5px 14px 5px 11px;border-radius:9px;line-height:1.5}
-.tb-back:hover{background:#f7dfdb}
-.tb-back:active{background:#f2d4cf}
+.tb-back:hover{background:#d8f0f0}
+.tb-back:active{background:#cdeceb}
 .tb-back em{font-style:normal;font-size:15px;line-height:1}
+/* 详情页专属「查看路线图」按钮（在分享按钮左侧，跳转当前攻略路线图） */
+.tb-route{display:none;align-items:center;gap:6px;font-size:14px;font-weight:700;color:var(--brand);
+background:var(--brand-soft);border:1px solid #cdeceb;padding:6px 16px;border-radius:9px;
+line-height:1.5;cursor:pointer;text-decoration:none;margin-left:auto}
+.tb-route:hover{background:#d8f0f0}
+.tb-route:active{background:#cdeceb}
+.tb-route em{font-style:normal;font-size:15px;line-height:1}
 /* 详情页专属分享按钮（自定义分享菜单，全平台通用） */
 .tb-share{display:none;align-items:center;gap:6px;font-size:14px;font-weight:700;color:var(--brand);
-background:var(--brand-soft);border:1px solid #f0dbd7;padding:6px 16px;border-radius:9px;
-line-height:1.5;cursor:pointer;font-family:inherit;margin-left:auto;position:relative}
-.tb-share:active{background:#f2d4cf}
+background:var(--brand-soft);border:1px solid #cdeceb;padding:6px 16px;border-radius:9px;
+line-height:1.5;cursor:pointer;font-family:inherit;position:relative}
+.tb-share:active{background:#cdeceb}
 html[data-view]:not([data-view="home"]) .topbar .brand,
 html[data-view]:not([data-view="home"]) .topbar .tb-nav{display:none}
 html[data-view]:not([data-view="home"]) .topbar .tb-back{display:flex}
+html[data-view="nanchang-3d"] .topbar .tb-route,
+html[data-view="anji-2d"] .topbar .tb-route,
+html[data-view="xiangshan-3d"] .topbar .tb-route{display:inline-flex}
 html[data-view]:not([data-view="home"]) .topbar .tb-share{display:inline-flex}
 
 /* ===== 首页 hero ===== */
-.hero-home{background:linear-gradient(135deg,#b83227 0%,#d35400 55%,#e08c3c 100%);
+.hero-home{background:linear-gradient(135deg,#0b7f80 0%,#0e9c9b 55%,#1c9bc4 100%);
 color:#fff;padding:58px 18px 48px;text-align:center}
 .hero-home h1{margin:0;font-size:36px;font-weight:800;letter-spacing:3px}
 .hero-home .lead{margin:14px auto 0;max-width:560px;font-size:15px;opacity:.94}
@@ -58,8 +73,8 @@ margin:24px 0 20px;box-shadow:0 1px 3px rgba(16,24,40,.04)}
 .fchips button{display:inline-flex;align-items:center;min-height:38px;border:1px solid var(--line);
 background:#fafafb;color:#4b5563;font-size:13.5px;padding:6px 15px;border-radius:999px;
 cursor:pointer;font-family:inherit;line-height:1.65}
-.fchips button:hover{border-color:#e3cfc9;color:var(--brand)}
-.fchips button:active{border-color:#e3cfc9;color:var(--brand);background:var(--brand-soft)}
+.fchips button:hover{border-color:#b8e6e6;color:var(--brand)}
+.fchips button:active{border-color:#b8e6e6;color:var(--brand);background:var(--brand-soft)}
 .fchips button.on{background:var(--brand);border-color:var(--brand);color:#fff}
 .fchips button i{font-style:normal;opacity:.55;font-size:12px;margin-left:4px}
 .fchips button.on i{opacity:.8}
@@ -68,7 +83,7 @@ cursor:pointer;font-family:inherit;line-height:1.65}
 .gcard{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
 text-decoration:none;color:inherit;display:flex;flex-direction:column;transition:.2s;
 box-shadow:0 1px 3px rgba(16,24,40,.04)}
-.gcard:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(16,24,40,.10);border-color:#e6d3ce}
+.gcard:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(16,24,40,.10);border-color:#b8e6e6}
 .gcard:active{transform:scale(.985)}
 .gcard .cov{position:relative;aspect-ratio:16/9;overflow:hidden;background:#eceef1}
 .gcard .cov img{width:100%;height:100%;object-fit:cover;display:block;transition:.4s}
@@ -98,7 +113,7 @@ padding:34px 24px;min-height:250px;line-height:2}
 .sec-title{font-size:13px;letter-spacing:2px;color:var(--muted);font-weight:600;margin:34px 0 0}
 
 /* ===== 攻略详情 ===== */
-.guide-hero{background:linear-gradient(135deg,#b83227 0%,#d35400 55%,#e08c3c 100%);color:#fff;
+.guide-hero{background:linear-gradient(135deg,#0b7f80 0%,#0e9c9b 55%,#1c9bc4 100%);color:#fff;
 padding:32px 18px 30px}
 .guide-hero .in{max-width:900px;margin:0 auto}
 .guide-hero h1{margin:0;font-size:30px;font-weight:800;letter-spacing:1.5px}
@@ -127,7 +142,7 @@ color:var(--brand);font-size:14px;font-weight:700;display:flex;align-items:cente
 /* 二级分组标题：全站统一一套（原 h3.day / .mg-h / .rg-h 三套字号、内边距、
    锚点偏移各不相同，现合并为同一规格；h3.day 只保留额外的上下外边距） */
 h3.day,.rg-h,.mg-h{font-size:15px;font-weight:700;color:#fff;
-background:linear-gradient(90deg,#c0392b,#e07b39);display:inline-block;
+background:linear-gradient(90deg,#0ea5a4,#0284c7);display:inline-block;
 padding:5px 16px;border-radius:999px;margin-bottom:12px}
 h3.day{margin:26px 0 14px}
 h3.day:first-of-type{margin-top:4px}
@@ -186,7 +201,7 @@ font-weight:700;padding:2px 10px;border-radius:999px}
 .rt-m{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
 .pill{font-size:12.5px;color:#4b5563;background:#fff;border:1px solid var(--line);
 border-radius:6px;padding:3px 9px}
-.pill.car{border-color:#f3d2cb;background:#fffaf8}
+.pill.car{border-color:#cdeceb;background:#fffaf8}
 .pill.bus{border-color:#d6e2f5;background:#f7f9fe}
 .pill.walk{border-color:#cfe6d4;background:#f6fbf7}
 .pill.no{color:#9aa1ab;background:#f6f7f8}
@@ -322,7 +337,7 @@ figure.tl-ph img{height:var(--ph-sm)}
 
 .poi-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}
 .poi-links a{display:inline-block;font-size:13px;color:var(--brand);background:#fff;
- border:1px solid #f3d2cb;border-radius:999px;padding:4px 13px;text-decoration:none}
+ border:1px solid #cdeceb;border-radius:999px;padding:4px 13px;text-decoration:none}
 .poi-links a:hover{background:var(--brand-soft)}
 
 /* ===== 重要提示卡 .pt =====
@@ -335,8 +350,8 @@ figure.tl-ph img{height:var(--ph-sm)}
 .pt-tag{font-size:12px;font-weight:700;border-radius:6px;padding:2px 9px;
  background:var(--brand-soft);color:var(--brand);white-space:nowrap}
 .pt-tag.t-ok{background:#e1f5ee;color:#0f6e56}
-.pt-tag.t-warn{background:#faece7;color:#993c1d}
-.pt-tag.t-err{background:#fcebeb;color:#a32d2d}
+.pt-tag.t-warn{background:#faece7;color:#b45309}
+.pt-tag.t-err{background:#e6f6f6;color:#0b7f80}
 .pt-d{font-size:14px;color:#4b5563;line-height:1.8}
 .pt-d b{color:var(--brand)}
 @media(max-width:640px){
@@ -366,4 +381,16 @@ figure.tl-ph img{height:var(--ph-sm)}
 .view.loading{min-height:60vh}
 .view.loading::after{content:'加载中…';display:block;text-align:center;padding:80px 20px;color:#999;font-size:15px}
 .view.load-error{min-height:60vh}
-.view.load-error::after{content:'内容加载失败，请刷新重试';display:block;text-align:center;padding:80px 20px;color:#c0392b;font-size:15px}
+.view.load-error::after{content:'内容加载失败，请刷新重试';display:block;text-align:center;padding:80px 20px;color:#0ea5a4;font-size:15px}
+
+/* ===== 第六章内联「行程路线图」 ===== */
+.route-embed{margin-top:18px;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--card)}
+.route-embed .re-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:11px 14px;background:var(--brand-soft);border-bottom:1px solid var(--line)}
+.route-embed .re-title{font-size:15px;font-weight:700;color:var(--brand-dark)}
+.route-embed .re-sub{font-size:12.5px;color:var(--ink-2)}
+.route-embed .re-frame{display:block;width:100%;height:620px;border:0;background:var(--bg)}
+.route-embed .re-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 14px;border-top:1px solid var(--line);background:var(--bg-soft)}
+.route-embed .re-full{font-size:13px;font-weight:600;color:var(--brand-dark);text-decoration:none}
+.route-embed .re-full:hover{text-decoration:underline}
+.route-embed .re-tip{font-size:12px;color:var(--ink-2)}
+@media (max-width:640px){.route-embed .re-frame{height:540px}}

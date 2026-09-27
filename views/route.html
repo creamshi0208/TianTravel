@@ -1,0 +1,30 @@
+<!-- 路线视图：完全按攻略「六、行程距离表」自动规划，只读展示 -->
+<div class="route-shell">
+  <header class="route-top">
+    <a class="brand" href="#/">🧭 行程路线图</a>
+    <span class="trip-title-label" id="trip-title-label"></span>
+    <div class="top-actions">
+      <div class="mode-pref" id="mode-pref">
+        <span class="mp-label">出行方式</span>
+        <button class="mp-btn" data-pref="metro" type="button">🚇 地铁优先</button>
+        <button class="mp-btn" data-pref="car" type="button">🚗 打车优先</button>
+      </div>
+      <button class="btn ghost small" id="btn-export-coords" type="button" title="导出当前所有点位坐标，可写回攻略永久生效">导出坐标</button>
+      <a class="back-to-guides" id="back-guide" href="#/" style="display:none">← 返回攻略</a>
+      <button class="btn ghost small" onclick="window.print()">打印</button>
+    </div>
+  </header>
+
+  <div class="route-main">
+    <aside class="route-side">
+      <div id="day-cards"></div>
+      <p class="route-status" id="route-status"></p>
+      <p class="hint" id="route-hint" style="text-align:center"></p>
+    </aside>
+
+    <div class="route-map-wrap">
+      <div id="map-canvas"></div>
+      <div class="map-tip" id="map-tip"></div>
+    </div>
+  </div>
+</div>

@@ -3,6 +3,7 @@
 if('scrollRestoration' in history){ history.scrollRestoration = 'manual'; }
 
 var VIEW_CACHE = {};
+var ROUTE_READY = false;
 
 function toggleView(id){
   document.querySelectorAll('.view').forEach(function(v){
@@ -11,16 +12,62 @@ function toggleView(id){
   document.documentElement.setAttribute('data-view', id);
 }
 
+/* 路线规划视图：先加载高德 SDK，再注入 HTML，最后加载 route.js */
+function loadRouteView(container, cb){
+  function injectHTML(){
+    fetch('views/route.html')
+      .then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); })
+      .then(function(html){
+        container.innerHTML = html;
+        container.classList.remove('loading');
+        VIEW_CACHE['route'] = true;
+        ROUTE_READY = true;
+        var rs = document.createElement('script');
+        rs.src = 'js/route.js';
+        rs.onload = function(){ if(cb) cb('route'); };
+        rs.onerror = function(){
+          console.error('Failed to load route.js');
+          container.classList.add('load-error');
+          if(cb) cb('route');
+        };
+        document.body.appendChild(rs);
+      })
+      .catch(function(err){
+        container.classList.remove('loading');
+        container.classList.add('load-error');
+        console.error('Failed to load route view', err);
+        if(cb) cb('route');
+      });
+  }
+  if(window.AMap){ injectHTML(); return; }
+  var sec = document.createElement('script');
+  sec.type = 'text/javascript';
+  sec.text = 'window._AMapSecurityConfig = { securityJsCode: "c3e4b6cfb8da4ce84b96fb98fac7b806" };';
+  document.head.appendChild(sec);
+  var sdk = document.createElement('script');
+  sdk.src = 'https://webapi.amap.com/maps?v=2.0&key=0b565bc9b5d0364ea88f7c03ec6cddcd&plugin=AMap.Geocoder,AMap.AutoComplete,AMap.Driving,AMap.Walking,AMap.Riding,AMap.Transfer';
+  sdk.onload = injectHTML;
+  sdk.onerror = function(){
+    container.classList.remove('loading');
+    container.classList.add('load-error');
+    console.error('Failed to load AMap SDK');
+    if(cb) cb('route');
+  };
+  document.head.appendChild(sdk);
+}
+
 function loadView(id, cb){
   var container = document.getElementById('v-' + id);
   if(!container){ toggleView('home'); if(cb) cb('home'); return 'home'; }
-  if(id === 'home' || VIEW_CACHE[id]){
+  if(id === 'home' || (VIEW_CACHE[id] && id !== 'route')){
     toggleView(id);
+    if(id === 'route' && window.__routeMap) window.__routeMap.resize();
     if(cb) cb(id);
     return id;
   }
   toggleView(id);
   container.classList.add('loading');
+  if(id === 'route'){ loadRouteView(container, cb); return id; }
   fetch('views/' + id + '.html')
     .then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); })
     .then(function(html){
@@ -103,7 +150,7 @@ function markEntry(initial){
 /* 返回本次导航最终落在哪个视图。抽出来是为了 route() 能统一维护 VIEW.prev/cur，
    不用在每条 return 分支里各写一遍。 */
 function inferView(sectionId){
-  var views = ['nanchang-3d','anji-2d','xiangshan-3d'];
+  var views = ['nanchang-3d','anji-2d','xiangshan-3d','route'];
   for(var i=0;i<views.length;i++){ if(sectionId.indexOf(views[i])===0) return views[i]; }
   if(sectionId.indexOf('aj-')===0) return 'anji-2d';
   return null;
@@ -112,8 +159,44 @@ function inferView(sectionId){
 function afterViewReady(target){
   applyMeta(target);
   if(window.TOCbuild) window.TOCbuild();
+  setTopRouteBtn(target);
+  injectRouteEmbed(target);
+}
+/* 把「行程路线图」内联进第六章：数据同源（都读这篇攻略的「六、行程距离表」），
+   所以改第六章 → 路线图跟着变；路线图里微调的位置 → 存起来下次自动套用。 */
+function injectRouteEmbed(target){
+  if(target === 'home' || target === 'route') return;
+  var box = document.getElementById('v-' + target);
+  if(!box) return;
+  var rg = box.querySelector('.rgroup[data-stops]');
+  if(!rg) return;                                  /* 这篇没有距离表，不显示 */
+  if(box.querySelector('.route-embed')) return;    /* 已注入过 */
+  var card = rg.closest('.card') || rg.parentElement;
+  if(!card) return;
+  var g = encodeURIComponent(target);
+  var wrap = document.createElement('div');
+  wrap.className = 'route-embed';
+  wrap.innerHTML =
+    '<div class="re-head"><span class="re-title">🧭 行程路线图</span>' +
+      '<span class="re-sub">按上方距离表自动生成，点Day卡片切换天数</span></div>' +
+    '<iframe class="re-frame" title="行程路线图" loading="lazy" scrolling="no" frameborder="0" ' +
+      'src="views/route-frame.html?guide=' + g + '"></iframe>' +
+    '<div class="re-foot"><a class="re-full" href="#/route?guide=' + g + '">全屏打开 →</a>' +
+      '<span class="re-tip">位置不对：图上拖动标记 或 点「调整位置」后再点地图，会自动保存</span></div>';
+  card.appendChild(wrap);
+}
+/* 顶栏「查看路线图」按钮：只在攻略详情页显示，href 指向当前攻略的路线图。
+   （入口从原先注入到「行程概览」卡片里的大按钮，改为顶栏常驻按钮） */
+function setTopRouteBtn(target){
+  var btn = document.getElementById('tbRoute');
+  if(!btn) return;
+  if(target === 'home' || target === 'route'){ btn.setAttribute('href', '#/route'); return; }
+  btn.setAttribute('href', '#/route?guide=' + encodeURIComponent(target));
 }
 
+function parseQuery(qs){
+  var o={}; qs.split('&').forEach(function(p){ var kv=p.split('='); if(kv[0]) o[kv[0]]=decodeURIComponent(kv[1]||''); }); return o;
+}
 function dispatch(initial){
   var raw = location.hash || '';
   if(raw !== '' && raw.indexOf('#/') !== 0){
@@ -148,7 +231,9 @@ function dispatch(initial){
     loadView('home', function(){ jumpTop(); afterViewReady('home'); });
     return 'home';
   }
-  var target = raw.replace(/^#\/?/, '') || 'home';
+  var target = raw.replace(/^#\/?/, '').replace(/\?.*$/, '') || 'home';
+  var routeQuery = raw.match(/\?(.*)/);
+  if(routeQuery) window.__routeParams = parseQuery(routeQuery[1]); else window.__routeParams = null;
   loadView(target, function(){ jumpTop(); afterViewReady(target); });
   return target;
 }

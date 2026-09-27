@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 基准指回站点根：route.js 内部的 views/xxx.html、images/xxx.png 等相对路径才正确 -->
+<base href="../">
+<title>行程路线图</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/route.css">
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: transparent; }
+  #embed-root { height: 100%; }
+  #embed-loading { padding: 28px 16px; text-align: center; color: #6b7280; font-size: 14px; font-family: inherit; }
+</style>
+</head>
+<body class="page-route embed">
+<div id="embed-root"><div id="embed-loading">正在加载路线图…</div></div>
+<script>
+window._AMapSecurityConfig = { securityJsCode: 'c3e4b6cfb8da4ce84b96fb98fac7b806' };
+(function () {
+  'use strict';
+  var qs = new URLSearchParams(location.search);
+  var guide = qs.get('guide') || '';
+  /* route.js 启动时读它来决定加载哪篇攻略（见 route.js 的 bootSlug） */
+  window.__routeParams = { guide: guide };
+
+  function loadScript(src, cb) {
+    var s = document.createElement('script');
+    s.src = src; s.async = false;
+    s.onload = function () { cb(null); };
+    s.onerror = function () { cb(new Error('load fail: ' + src)); };
+    document.head.appendChild(s);
+  }
+  function fail(msg) {
+    var el = document.getElementById('embed-loading');
+    if (el) el.textContent = msg;
+  }
+
+  fetch('views/route.html').then(function (r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.text();
+  }).then(function (html) {
+    document.getElementById('embed-root').innerHTML = html;
+    document.getElementById('embed-root').classList.add('loaded');
+    /* 让「返回攻略」等链接跳到父页面，而不是在 iframe 里换 hash */
+    ['back-guide'].forEach(function (id) {
+      var a = document.getElementById(id);
+      if (a) a.setAttribute('target', '_top');
+    });
+    var brand = document.querySelector('.route-top .brand');
+    if (brand) brand.setAttribute('target', '_top');
+    loadScript('https://webapi.amap.com/maps?v=2.0&key=0b565bc9b5d0364ea88f7c03ec6cddcd&plugin=AMap.Geocoder,AMap.AutoComplete,AMap.Driving,AMap.Walking,AMap.Riding,AMap.Transfer', function (err) {
+      if (err) { fail('地图服务加载失败，请检查网络后刷新页面。'); return; }
+      loadScript('js/route.js', function (err2) {
+        if (err2) fail('路线模块加载失败。');
+      });
+    });
+  }).catch(function (e) {
+    fail('路线图加载失败：' + (e && e.message ? e.message : '未知错误'));
+  });
+})();
+</script>
+</body>
+</html>
