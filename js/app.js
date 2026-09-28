@@ -45,7 +45,7 @@ function loadRouteView(container, cb){
   sec.text = 'window._AMapSecurityConfig = { securityJsCode: "c3e4b6cfb8da4ce84b96fb98fac7b806" };';
   document.head.appendChild(sec);
   var sdk = document.createElement('script');
-  sdk.src = 'https://webapi.amap.com/maps?v=2.0&key=0b565bc9b5d0364ea88f7c03ec6cddcd&plugin=AMap.Geocoder,AMap.AutoComplete,AMap.Driving,AMap.Walking,AMap.Riding,AMap.Transfer';
+  sdk.src = 'https://webapi.amap.com/maps?v=2.0&key=0b565bc9b5d0364ea88f7c03ec6cddcd&plugin=AMap.Geocoder,AMap.AutoComplete,AMap.Driving,AMap.Walking,AMap.Riding,AMap.Transfer,AMap.PlaceSearch';
   sdk.onload = injectHTML;
   sdk.onerror = function(){
     container.classList.remove('loading');

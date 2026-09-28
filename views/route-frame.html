@@ -50,7 +50,7 @@ window._AMapSecurityConfig = { securityJsCode: 'c3e4b6cfb8da4ce84b96fb98fac7b806
     });
     var brand = document.querySelector('.route-top .brand');
     if (brand) brand.setAttribute('target', '_top');
-    loadScript('https://webapi.amap.com/maps?v=2.0&key=0b565bc9b5d0364ea88f7c03ec6cddcd&plugin=AMap.Geocoder,AMap.AutoComplete,AMap.Driving,AMap.Walking,AMap.Riding,AMap.Transfer', function (err) {
+    loadScript('https://webapi.amap.com/maps?v=2.0&key=0b565bc9b5d0364ea88f7c03ec6cddcd&plugin=AMap.Geocoder,AMap.AutoComplete,AMap.Driving,AMap.Walking,AMap.Riding,AMap.Transfer,AMap.PlaceSearch', function (err) {
       if (err) { fail('地图服务加载失败，请检查网络后刷新页面。'); return; }
       loadScript('js/route.js', function (err2) {
         if (err2) fail('路线模块加载失败。');

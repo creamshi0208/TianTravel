@@ -1,28 +1,14 @@
 /* route.js —— 路线视图（只读）：完全按攻略「六、行程距离表」自动规划，基于高德 JS API 2.0。
  * 数据契约：每个 .rgroup[data-stops="A → B → …"] 是一天；组内 .rt 卡片按行驶顺序逐段
  * 给出 起→终 + 距离 + .pill 方式标签（car=打车/驾驶、walk=步行、bus=公交、pill 文本含「地铁」=地铁）。
- * 规划严格按距离表：节点序列、每段交通方式都从表里取，页面不提供任何编辑操作。 */
+ * 规划按距离表：节点序列、每段交通方式都从表里取（默认首选 pill）；每一段可在日卡片里
+ * 单独切换交通方式（modeMan 标记后第六章不再覆盖）。 */
 (function () {
   'use strict';
 
   /* ---------- 常量 ---------- */
-  var STORE_KEY = 'tg_ro…p_v1';
+  var STORE_KEY = 'tg_route_trip_v1';
   var OVERRIDE_KEY = 'tg_route_overrides_v1';   /* 手动修正坐标表 {地点名:{lat,lng}} */
-  var PREF_KEY = 'tg_route_mode_pref_v1';       /* 出行方式偏好：metro=地铁优先 / car=打车优先 */
-  /* 出行方式偏好。默认 metro（=第六章每段的首选项）；切 car 后凡含打车 pill 的段按打车渲染 */
-  var MODE_PREF = 'metro';
-  (function () {
-    try {
-      /* ① 链接参数 #/route?guide=xx&pref=car ② 本地记住的偏好 ③ 默认地铁优先 */
-      var q = (window.__routeParams && window.__routeParams.pref) || '';
-      if (q !== 'car' && q !== 'metro') q = '';
-      if (!q) {
-        var m = String(window.location.search || '').match(/pref=(car|metro)/);
-        q = m ? m[1] : '';
-      }
-      MODE_PREF = q || window.localStorage.getItem(PREF_KEY) || 'metro';
-    } catch (e) { MODE_PREF = 'metro'; }
-  })();
   /* 链接参数指定初始天：#/route?guide=xx&day=2 → 直接看 Day 2 */
   function bootDayIdx() {
     var d = parseInt((window.__routeParams && window.__routeParams.day) || '', 10);
@@ -47,6 +33,7 @@
     walk:  { label: '走路',   k: 1.6,  min: 4, max: 15, pause: 160 }
  };
   var MODE_ICON = { auto: '🤖', car: '🚗', bus: '🚌', metro: '🚇', bike: '🚴', walk: '🚶' };
+  var MODE_ORDER = ['car', 'bus', 'metro', 'bike', 'walk'];   /* 每段交通方式切换按钮的排列顺序 */
 
   /* ---------- 工具 ---------- */
   function $(id) { return document.getElementById(id); }
@@ -185,12 +172,11 @@
     }
     return out;
   }
-  /* 该段的规划方式：地铁优先=取首选 pill；打车优先=有打车 pill 就用打车，否则仍取首选 */
+  /* 该段的规划方式：取第六章推荐的首选 pill。全局不再提供「地铁/打车优先」开关 ——
+     每一段都可以在日卡片里单独改交通方式（见 renderCards 的 seg-modes 按钮）。 */
   function segModeOf(rtEl) {
     var ms = segModesOf(rtEl);
-    if (!ms.length) return 'car';
-    if (MODE_PREF === 'car' && ms.indexOf('car') >= 0) return 'car';
-    return ms[0];
+    return ms.length ? ms[0] : 'car';
   }
   function segLabelOf(rtEl) {
     var ps = pillsOf(rtEl);
@@ -476,6 +462,7 @@
   /* ---------- DOM ---------- */
   var elDayTabs = $('day-tabs'), elDayCards = $('day-cards'), elRouteStatus = $('route-status');
   var elTripLabel = $('trip-title-label'), elBackGuide = $('back-guide'), elRouteHint = $('route-hint');
+  var elBrand = document.querySelector('.route-top .brand');
 
   /* 轻提示：保存/导出等操作的即时反馈 */
   function toast(msg, ms) {
@@ -488,16 +475,6 @@
       el.classList.remove('on');
       setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 320);
     }, ms || 2600);
-  }
-
-  /* 出行方式偏好按钮状态 */
-  function syncPrefUI() {
-    var box = $('mode-pref');
-    if (!box) return;
-    var bs = box.querySelectorAll('.mp-btn');
-    for (var i = 0; i < bs.length; i++) {
-      bs[i].classList.toggle('on', bs[i].getAttribute('data-pref') === MODE_PREF);
-    }
   }
 
   /* 拿到某篇攻略的原文 HTML：内存缓存 → 页面里已加载的 DOM → fetch 文件。
@@ -528,9 +505,11 @@
       for (var k = 0; k < td.segs.length; k++) {
         var ns = (nd.segs && nd.segs[k]) || null;
         if (!ns || !ns.mode) continue;
+        var st = td.stops[k + 1];
+        /* 用户在这段上手动改过交通方式 → 第六章的推荐不再覆盖 */
+        if (st && st.modeMan) continue;
         if (td.segs[k].mode !== ns.mode) { td.segs[k].mode = ns.mode; changed++; }
         if (ns.planned) td.segs[k].planned = ns.planned;
-        var st = td.stops[k + 1];
         if (st) {
           st.modeFrom = ns.mode;
           if (ns.planned) st.modePlanned = ns.planned;
@@ -538,64 +517,6 @@
       }
     });
     return changed;
-  }
-
-  /* 出行方式切换后：重读第六章拿到新的每段方式，套到当前行程上，再重新算路线。
-     坐标一股不动，所以不会重新联网定位。返回 Promise<改动段数>；-1 = 读不到攻略原文。 */
-  function reapplyModePreference() {
-    var slug = trip.guideSlug || lastSlug;
-    return guideHtmlOf(slug).then(function (html) {
-      var changed = applyGuideModes(html, slug);
-      routeCache = {};
-      stopFlow();
-      save();
-      var d0 = trip.days[activeDay];
-      if (d0 && d0.stops.length >= 2) {
-        return planDay(activeDay).then(function () { showDay(activeDay, { force: true }); return changed; });
-      }
-      renderAll();
-      return changed;
-    }).catch(function () {
-      /* 拿不到原文（离线 / 无攻略来源）：按当前数据重算，方式保持原样 */
-      routeCache = {};
-      stopFlow();
-      renderAll();
-      var d0 = trip.days[activeDay];
-      if (d0 && d0.stops.length >= 2) {
-        return planDay(activeDay).then(function () { renderAll(); return -1; });
-      }
-      return -1;
-    });
-  }
-
-  /* 导出当前生效坐标 → 可写回攻略「八、景点速查」的 to= 参数，让修正脱离 localStorage 永久生效 */
-  function exportCoords() {
-    var data = { guide: trip.guideSlug || '', coords: {} }, n = 0;
-    trip.days.forEach(function (d) {
-      d.stops.forEach(function (sp) {
-        if (typeof sp.lat === 'number' && typeof sp.lng === 'number') {
-          data.coords[sp.name] = { lat: +sp.lat.toFixed(6), lng: +sp.lng.toFixed(6) }; n++;
-        }
-      });
-    });
-    var txt = JSON.stringify(data, null, 2);
-    try {
-      var blob = new Blob([txt], { type: 'application/json' });
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'coords-' + (trip.guideSlug || 'trip') + '.json';
-      document.body.appendChild(a); a.click();
-      setTimeout(function () { URL.revokeObjectURL(a.href); if (a.parentNode) a.parentNode.removeChild(a); }, 500);
-    } catch (e) { /* 下载失败不影响复制 */ }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(txt).then(function () {
-        toast('已导出 ' + n + ' 个坐标：已下载 JSON 并复制到剪贴板，发给开发者即可写回攻略');
-      }, function () {
-        toast('已导出 ' + n + ' 个坐标（JSON 已下载；复制失败请从文件取）');
-      });
-    } else {
-      toast('已导出 ' + n + ' 个坐标（JSON 已下载）');
-    }
   }
 
   /* ---------- 地图 ---------- */
@@ -796,11 +717,25 @@
         var sg = m[s.id] || { seq: j + 1, color: c };
         var seg = (d.segs && d.segs[j - 1]) || null;
         var planned = seg && seg.planned ? seg.planned : '';
-        var segInfo = '';
+        var segInfo = '', segModesHtml = '';
         if (j > 0) {
           var mm = (routeCache[i] && routeCache[i].segments[j - 1]) || null;
-          if (mm) segInfo = (MODE_ICON[mm.mode] || '') + ' 实测 ' + fmtKm(mm.distance) + ' · ' + fmtDur(mm.duration);
+          if (mm) {
+            segInfo = (MODE_ICON[mm.mode] || '') + ' 实测 ' + fmtKm(mm.distance) + ' · ' + fmtDur(mm.duration);
+            /* 地铁段：显示「经XX站」，两段都是步行导航（起点→地铁站→目的地） */
+            if (mm.via) segInfo += ' · 经' + escapeHtml(mm.via);
+          }
           else if (planned) segInfo = planned;
+          /* 每段可改交通方式：点小按钮按所选方式重新规划这一段（点完立即重算并保存） */
+          var curMode = (mm && mm.mode) || (seg && seg.mode) || s.modeFrom || 'car';
+          var chips = '';
+          for (var mi = 0; mi < MODE_ORDER.length; mi++) {
+            var mv = MODE_ORDER[mi];
+            chips += '<button type="button" class="seg-m' + (mv === curMode ? ' on' : '') +
+              '" data-setmode="1" data-day="' + i + '" data-j="' + j + '" data-mode="' + mv + '"' +
+              ' title="按' + MODE_META[mv].label + '重新规划这一段">' + MODE_ICON[mv] + MODE_META[mv].label + '</button>';
+          }
+          segModesHtml = '<span class="seg-modes">' + chips + '</span>';
         }
         var unlocated = s.lat === null || s.lat === undefined;
         html += '<div class="stop-row' + (unlocated ? ' unlocated' : '') + '">' +
@@ -810,7 +745,7 @@
           '<span class="stop-name">' + meta.emoji + ' ' + escapeHtml(s.name) +
           (unlocated ? ' <span class="loc-warn">未定位</span>' : (s.coordSrc === 'manual' || s.name && overrides[s.name] ? ' <span class="loc-manual">手动位置</span>' : '')) + '</span>' +
           '<span class="stop-meta">' + escapeHtml(s.address || '') +
-          (segInfo ? '<br>' + escapeHtml(segInfo) : '') + '</span></span>' +
+          (segInfo ? '<br>' + escapeHtml(segInfo) : '') + segModesHtml + '</span></span>' +
           '<span class="stop-ops"><button class="btn-locate" data-locate="' + s.id + '" title="' +
           (unlocated ? '在地图上点击设置位置' : '位置不对？在地图上点击重新设置，或直接拖动地图上的标记') + '">' +
           (unlocated ? '手动定位' : '调整位置') + '</button></span>' +
@@ -889,7 +824,8 @@
         }));
         lineOverlays.push(new AMap.Polyline({
           map: map, path: seg.paths,
-          strokeColor: col, strokeWeight: 6, strokeOpacity: 0.95,
+          strokeColor: col, strokeWeight: 6, strokeOpacity: seg.estimated ? 0.8 : 0.95,
+          strokeStyle: seg.estimated ? 'dashed' : 'solid',
           isOutline: true, outlineColor: '#ffffff', borderWeight: 1.5,
           showDir: true, lineJoin: 'round', lineCap: 'round',
           zIndex: 40
@@ -930,7 +866,11 @@
       });
       if (pts.length < 2 || acc <= 0) return;
       var avgK = dSum > 0 ? tSum / (dSum / 1000) : MODE_META.car.k;
-      var sec = clamp(dSum / 1000 * avgK, 4, 20);
+      /* 播放时长（2026-09-28 方案 B）：≤12s 的短天按里程原样；超过 12s 的长天
+         用平方根压缩（12 + 0.5×√超出），越长的天越明显提速（Day2 约 20s→15s），
+         且保留「里程越长播放越久一点」的次序感。 */
+      var raw = dSum / 1000 * avgK;
+      var sec = raw <= 12 ? clamp(raw, 4, 12) : 12 + Math.sqrt(raw - 12) * 0.5;
       out.push({
         day: i, pts: pts, cum: cum, total: acc, stopDists: stopDists, segModes: segModes,
         dist: 0, pausing: 0, nextStop: 0, restart: false, speed: acc / sec
@@ -1373,7 +1313,9 @@
   function amapSearch(svc, a, b) {
     return new Promise(function (resolve, reject) {
       svc.search(new AMap.LngLat(a.lng, a.lat), new AMap.LngLat(b.lng, b.lat), function (status, result) {
-        if (status === 'complete') resolve(result); else reject(new Error(status || 'no_data'));
+        /* 失败时把高德的原因带上（如 CUQPS_HAS_EXCEEDED_THE_LIMIT 限流），方便排查 */
+        if (status === 'complete') resolve(result);
+        else reject(new Error((status || 'no_data') + (result && result.info ? ' / ' + result.info : '')));
       });
     });
   }
@@ -1383,46 +1325,206 @@
     if (res.plans && res.plans[0]) return res.plans[0];
     return null;
   }
+  /* ---------- Transfer 完整换乘规划：bus 的主路径、metro 的兜底 ---------- */
+  function planTransferSeg(a, b) {
+    if (!(window.AMap.Transfer && trip.city)) return straightSeg(a, b);
+    return amapSearch(routeService('metro'), a, b).then(function (res) {
+      var r = extractRoute(res);
+      if (!r) throw new Error('empty');
+      var pts = downsample(collectPath(r), 180);
+      if (pts.length < 2) throw new Error('nopath');
+      /* Transfer 的 plan 往往不带 distance：用换乘段之和，再不行按路径长度兜底 */
+      var dist = r.distance || 0;
+      if (!dist && r.segments && r.segments.length) {
+        for (var si = 0; si < r.segments.length; si++) dist += (r.segments[si].distance || 0);
+      }
+      if (!dist) {
+        for (var pi = 1; pi < pts.length; pi++) {
+          dist += haversine({ lat: pts[pi - 1][1], lng: pts[pi - 1][0] }, { lat: pts[pi][1], lng: pts[pi][0] });
+        }
+      }
+      return { distance: dist, duration: r.time || 0, paths: pts, estimated: false };
+    }).catch(function (err) {
+      console.warn('[route] transfer plan failed, drawing estimated dashed line:',
+        err && err.message ? err.message : err);
+      return straightSeg(a, b);
+    });
+  }
+
+  /* 🔴 公交规划失败绝不能拿驾车路线冒充：驾车路径走马路，画出来就是
+     「公交线沿着大马路跑」。bus 失败 → 换全新规划器重试（planTransferSeg 内部
+     每次都 new Transfer）→ 仍失败画虚线直线并计入「估算」。 */
+  function nearestMetroStation(ll) {
+    var A = window.AMap;
+    return new Promise(function (resolve) {
+      if (!A.PlaceSearch || !trip.city) return resolve(null);
+      var ps = new A.PlaceSearch({ city: trip.city.name, citylimit: true, type: '地铁站', pageSize: 10, pageIndex: 1 });
+      ps.searchNearBy('', [ll.lng, ll.lat], 5000, function (status, res) {
+        try {
+          if (status !== 'complete' || !res || !res.poiList || !res.poiList.pois || !res.poiList.pois.length) return resolve(null);
+          resolve(res.poiList.pois[0]);   /* searchNearBy 按距离由近到远，取最近一个 */
+        } catch (e) { resolve(null); }
+      });
+    });
+  }
+  function llOf(loc) {
+    if (!loc) return null;
+    if (typeof loc.getLng === 'function') return { lng: loc.getLng(), lat: loc.getLat() };
+    if (Array.isArray(loc)) return { lng: +loc[0], lat: +loc[1] };
+    return { lng: +loc.lng, lat: +loc.lat };
+  }
+  /* 🚇 地铁段的画法（2026-09-28 v2「锚定车站」方案）：
+     S1=离起点最近的地铁站、S2=离终点最近的地铁站，然后三段拼接——
+       ① 起点 →步行导航→ S1   ② S1 →Transfer(站到站)→ S2（走真实地铁线）
+       ③ S2 →步行导航→ 终点
+     站到站规划比任意点对点可靠得多（首末步行短、且必然沿地铁线路画），
+     这就是「更好的地铁导航获取方法」。兜底：
+     · 两头都找不到站 → 完整 Transfer（planTransferSeg）
+     · 只有一头有站 / S1、S2 是同一站 → 起点进站、出站到终点，两段步行
+     · 站到站 Transfer 失败 → S1—S2 虚线直线（地铁在地下，估算合理）
+     · 某段步行失败 → 该段直线估算 */
+  function stripStation(name) { return (name || '').replace(/地铁站$/, ''); }
+  function sameStation(s1, s2, p1, p2) {
+    if (s1 && s2 && s1.uid && s2.uid && s1.uid === s2.uid) return true;
+    if (s1 && s2 && s1.name && s1.name === s2.name) return true;
+    return haversine(p1, p2) < 200;
+  }
+  function walkLeg(from, to) {
+    return amapSearch(routeService('walk'), from, to).then(function (res) {
+      var r = extractRoute(res);
+      if (!r) throw new Error('empty');
+      var pts = downsample(collectPath(r), 180);
+      if (pts.length < 2) throw new Error('nopath');
+      var dist = r.distance || 0;
+      if (!dist) {
+        for (var pi = 1; pi < pts.length; pi++) {
+          dist += haversine({ lat: pts[pi - 1][1], lng: pts[pi - 1][0] }, { lat: pts[pi][1], lng: pts[pi][0] });
+        }
+      }
+      return { distance: dist, time: r.time || 0, paths: pts, estimated: false };
+    }).catch(function (err) {
+      console.warn('[route] walk leg failed:', err && err.message ? err.message : err);
+      return null;
+    });
+  }
+  /* 站到站的地铁乘车段：Transfer 沿真实地铁线路画；失败则虚线直线估算 */
+  function planRide(p1, p2) {
+    var d = haversine(p1, p2) * 1.2;
+    if (!(window.AMap.Transfer && trip.city)) {
+      return Promise.resolve({ distance: d, time: d / 1000 / 35 * 3600, paths: [[p1.lng, p1.lat], [p2.lng, p2.lat]], estimated: true });
+    }
+    return amapSearch(routeService('metro'), p1, p2).then(function (res) {
+      var r = extractRoute(res);
+      if (!r) throw new Error('empty');
+      var pts = downsample(collectPath(r), 180);
+      if (pts.length < 2) throw new Error('nopath');
+      var dist = r.distance || 0;
+      if (!dist && r.segments && r.segments.length) {
+        for (var si = 0; si < r.segments.length; si++) dist += (r.segments[si].distance || 0);
+      }
+      if (!dist) {
+        for (var pi = 1; pi < pts.length; pi++) {
+          dist += haversine({ lat: pts[pi - 1][1], lng: pts[pi - 1][0] }, { lat: pts[pi][1], lng: pts[pi][0] });
+        }
+      }
+      return { distance: dist, time: r.time || 0, paths: pts, estimated: false };
+    }).catch(function (err) {
+      console.warn('[route] metro ride S1→S2 failed, dashed straight estimate:', err && err.message ? err.message : err);
+      return { distance: d, time: d / 1000 / 35 * 3600, paths: [[p1.lng, p1.lat], [p2.lng, p2.lat]], estimated: true };
+    });
+  }
+  function assembleLegs(legs, fallback) {
+    var paths = [], dist = 0, time = 0, est = false;
+    for (var i = 0; i < legs.length; i++) {
+      var L = legs[i];
+      if (!L) { est = true; continue; }
+      if (L.paths && L.paths.length) paths = paths.concat(L.paths);
+      dist += L.distance; time += L.time;
+      if (L.estimated) est = true;
+    }
+    if (paths.length < 2) return fallback;
+    return { distance: dist, duration: time, paths: downsample(paths, 180), estimated: est };
+  }
+  function planMetroSeg(a, b) {
+    return Promise.all([nearestMetroStation(a), nearestMetroStation(b)]).then(function (ps) {
+      var s1 = ps[0], s2 = ps[1];
+      var p1 = s1 && llOf(s1.location), p2 = s2 && llOf(s2.location);
+      if (!p1 && !p2) return planTransferSeg(a, b);      /* 两头都没有地铁站：完整换乘兜底 */
+      if (!p1 || !p2 || sameStation(s1, s2, p1, p2)) {
+        /* 一头没站 / 同一站进出：起点→站、站→终点 两段步行 */
+        var mid = p1 || p2, via = stripStation((p1 ? s1 : s2).name);
+        return Promise.all([walkLeg(a, mid), walkLeg(mid, b)]).then(function (ls) {
+          if (!ls[0] && !ls[1]) return planTransferSeg(a, b);
+          var r = assembleLegs(ls, null);
+          if (!r) return planTransferSeg(a, b);
+          r.via = via;
+          return r;
+        });
+      }
+      /* 标准三段：步行进站 → 地铁（站到站）→ 步行出站 */
+      return Promise.all([walkLeg(a, p1), planRide(p1, p2), walkLeg(p2, b)]).then(function (ls) {
+        if (!ls[0] && !ls[1] && !ls[2]) return planTransferSeg(a, b);
+        var r = assembleLegs(ls, null);
+        if (!r) return planTransferSeg(a, b);
+        r.via = stripStation(s1.name);
+        return r;
+      });
+    });
+  }
+
+  /* 解析一次规划结果 → 线段对象（驾车/步行/骑行通用） */
+  function parseSegRes(res, mode) {
+    var r = extractRoute(res);
+    if (!r) { console.warn('[route] no route in response', mode, res); throw new Error('empty'); }
+    var pts = downsample(collectPath(r), 180);
+    if (pts.length < 2) { console.warn('[route] no path points', mode, r); throw new Error('nopath'); }
+    /* Transfer 的 plan 往往不带 distance：用换乘段之和，再不行按路径长度兜底 */
+    var dist = r.distance || 0;
+    if (!dist && r.segments && r.segments.length) {
+      for (var si = 0; si < r.segments.length; si++) dist += (r.segments[si].distance || 0);
+    }
+    if (!dist) {
+      for (var pi = 1; pi < pts.length; pi++) {
+        dist += haversine({ lat: pts[pi - 1][1], lng: pts[pi - 1][0] }, { lat: pts[pi][1], lng: pts[pi][0] });
+      }
+    }
+    return { distance: dist, duration: r.time || 0, paths: pts, estimated: false };
+  }
+  /* 全新规划器（重试用）：drivingSvc 是缓存单例，状态坏了复用会一直失败 */
+  function freshSvc(mode) {
+    var A = window.AMap;
+    if (mode === 'walk' && A.Walking) return new A.Walking();
+    if (mode === 'bike' && A.Riding) return new A.Riding();
+    return new A.Driving({ policy: (window.AMap.DrivingPolicy || {}).LEAST_TIME || 0 });
+  }
   function planSegment(a, b, mode) {
+    /* 🚇 地铁段（2026-09-28 需求）：起点步行到最近地铁站 + 步行到目的地，
+       不画完整换乘（完整方案作为兜底，见 planMetroSeg）。 */
+    if (mode === 'metro') return planMetroSeg(a, b);
     var svc = routeService(mode);
     return amapSearch(svc, a, b)
-      .then(function (res) {
-        var r = extractRoute(res);
-        if (!r) {
-          console.warn('[route] no route in response', mode, res);
-          throw new Error('empty');
-        }
-        var pts = downsample(collectPath(r), 180);
-        if (pts.length < 2) {
-          console.warn('[route] no path points', mode, r);
-          throw new Error('nopath');
-        }
-        /* Transfer（地铁/公交）的 plan 往往不带 distance：用换乘段之和，再不行按路径长度兜底 */
-        var dist = r.distance || 0;
-        if (!dist && r.segments && r.segments.length) {
-          for (var si = 0; si < r.segments.length; si++) dist += (r.segments[si].distance || 0);
-        }
-        if (!dist) {
-          for (var pi = 1; pi < pts.length; pi++) {
-            dist += haversine({ lat: pts[pi - 1][1], lng: pts[pi - 1][0] }, { lat: pts[pi][1], lng: pts[pi][0] });
-          }
-        }
-        return { distance: dist, duration: r.time || 0, paths: pts, estimated: false };
-      })
+      .then(function (res) { return parseSegRes(res, mode); })
       .catch(function (err) {
         console.warn('[route] ' + mode + ' search failed:', err && err.message ? err.message : err);
-        if (mode !== 'car') {
-          return amapSearch(getDriving(), a, b).then(function (res) {
-            var r = extractRoute(res);
-            var pts = r ? downsample(collectPath(r), 180) : [];
-            if (pts.length < 2) throw new Error('nopath');
-            return { distance: r.distance || 0, duration: r.time || 0, paths: pts, estimated: false, fellBack: true };
-          }).catch(function (err2) {
-            console.warn('[route] driving fallback also failed:', err2 && err2.message ? err2.message : err2);
-            return straightSeg(a, b);
-          });
-        }
-        return straightSeg(a, b);
+        if (mode === 'bus') return planTransferSeg(a, b);
+        /* 🔴 限流 / 网络抖动这类瞬时失败也会发生：等 350ms 换全新规划器重试一次，
+           仍失败才走兜底 —— 驾车段之前一次失败就直接画直线（Day2 摩天轮→酒店踩过）。 */
+        return new Promise(function (resolve) {
+          setTimeout(function () { resolve(amapSearch(freshSvc(mode), a, b)); }, 350);
+        }).then(function (res) {
+          return parseSegRes(res, mode);
+        }).catch(function (err2) {
+          console.warn('[route] ' + mode + ' retry failed:', err2 && err2.message ? err2.message : err2);
+          if (mode !== 'car') {
+            return amapSearch(getDriving(), a, b).then(function (res) {
+              return parseSegRes(res, mode);
+            }).catch(function (err3) {
+              console.warn('[route] driving fallback also failed:', err3 && err3.message ? err3.message : err3);
+              return straightSeg(a, b);
+            });
+          }
+          return straightSeg(a, b);
+        });
       });
   }
   function straightSeg(a, b) {
@@ -1475,38 +1577,31 @@
   }
 
   /* ---------- 事件 ---------- */
-  (function bindPref() {
-    var box = $('mode-pref');
-    if (!box) return;
-    box.addEventListener('click', function (e) {
-      var b = e.target.closest('.mp-btn'); if (!b) return;
-      var v = b.getAttribute('data-pref');
-      if (!v || v === MODE_PREF) return;
-      MODE_PREF = v;
-      try { window.localStorage.setItem(PREF_KEY, v); } catch (err) { /* 忽略 */ }
-      syncPrefUI();
-      elRouteStatus.textContent = '正在按' + (v === 'car' ? '打车优先' : '地铁优先') + '重算路线…';
-      reapplyModePreference().then(function (changed) {
-        if (changed < 0) {
-          toast('⚠️ 没读到攻略原文，出行方式暂未变化；请刷新页面后重试');
-          return;
-        }
-        toast(v === 'car'
-          ? '已切换：🚗 打车优先（' + (changed ? changed + ' 段改为打车' : '已经是打车') + '）'
-          : '已切换：🚇 地铁优先（' + (changed ? '已更新 ' + changed + ' 段' : '本已按第六章推荐方案') + '）');
-      });
-    });
-  })();
-  (function bindExport() {
-    var b = $('btn-export-coords');
-    if (b) b.addEventListener('click', exportCoords);
-  })();
-  syncPrefUI();
   if (elDayTabs) elDayTabs.addEventListener('click', function (e) {
     var t = e.target.closest('.day-tab'); if (!t) return;
     showDay(+t.dataset.day);
   });
   elDayCards.addEventListener('click', function (e) {
+    /* 段交通方式切换按钮：改这段的方式 → 立即重新规划并持久化（modeMan 防止第六章覆盖） */
+    var sm = e.target.closest('[data-setmode]');
+    if (sm) {
+      var di = +sm.getAttribute('data-day'), ji = +sm.getAttribute('data-j'), mv = sm.getAttribute('data-mode');
+      var day = trip.days[di], stp = day && day.stops[ji];
+      if (!stp || !mv || MODE_ORDER.indexOf(mv) < 0) return;
+      if (stp.modeFrom === mv && routeCache[di]) return;
+      stp.modeFrom = mv;
+      stp.modeMan = true;
+      if (day.segs[ji - 1]) { day.segs[ji - 1].mode = mv; day.segs[ji - 1].modeMan = true; }
+      delete routeCache[di];
+      save();
+      elRouteStatus.textContent = '正在按' + (MODE_META[mv] || {}).label + '重新规划这一段…';
+      planDay(di).then(function () {
+        renderAll();
+        var r = routeCache[di];
+        if (r) elRouteStatus.textContent = '已更新：' + fmtKm(r.totalDistance) + ' · ' + fmtDur(r.totalDuration) + (r.estCount ? ' · 含估算' : '');
+      });
+      return;
+    }
     var locBtn = e.target.closest('[data-locate]');
     if (locBtn) { startPicking(locBtn.dataset.locate); return; }
     var head = e.target.closest('.day-head[data-day]');
@@ -1535,6 +1630,8 @@
   if (bootSlug) {
     elBackGuide.setAttribute('href', '#/' + bootSlug);
     elBackGuide.style.display = '';
+    /* 左上角「🧭 行程路线图」也指回来源攻略（从哪进、回哪去），而不是首页 */
+    if (elBrand) elBrand.setAttribute('href', '#/' + bootSlug);
     trip.guideSlug = bootSlug;
     /* 优先复用已加载的攻略 DOM；否则自己 fetch（分享链接直达 / 刷新场景） */
     var viewEl = document.getElementById('v-' + bootSlug);
@@ -1589,6 +1686,7 @@
     if (trip.guideSlug) {
       elBackGuide.setAttribute('href', '#/' + trip.guideSlug);
       elBackGuide.style.display = '';
+      if (elBrand) elBrand.setAttribute('href', '#/' + trip.guideSlug);
     }
     elRouteHint.innerHTML = guideLinkHtml(trip.guideSlug);
     renderAll();
