@@ -161,6 +161,13 @@ function afterViewReady(target){
   if(window.TOCbuild) window.TOCbuild();
   setTopRouteBtn(target);
   injectRouteEmbed(target);
+  /* 手机 App 壳：攻略详情视图构建（或恢复）Tab 壳，桌面 ≤640px 由 CSS 切换显示 */
+  if(window.TG_appShell){
+    try{ window.TG_appShell.build(target); window.TG_appShell.mark(target); }
+    catch(err){ console.error('app-shell build failed', err); document.documentElement.setAttribute('data-ap','0'); }
+  } else if(window.TG_appShell === undefined){
+    document.documentElement.setAttribute('data-ap','0');
+  }
 }
 /* 把「行程路线图」内联进第六章：数据同源（都读这篇攻略的「六、行程距离表」），
    所以改第六章 → 路线图跟着变；路线图里微调的位置 → 存起来下次自动套用。 */
