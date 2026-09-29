@@ -3,7 +3,8 @@
 --line:#e6ecf2;--bg:#f7f9fc;--bg-soft:#eef4f8;--card:#fff;
 --brand:#0ea5a4;--brand-dark:#0b7f80;--brand2:#0284c7;--brand-soft:#e6f6f6;
 --warm:#f59e0b;--danger:#e11d48;
---radius:16px;--radius-s:10px;--radius-l:20px;
+--tip-bg:#fffaf4;--tip-line:#f6e3cb;--tip-ink:#7a4a17;--tip-ink-2:#b45309;
+--radius:14px;--radius-s:10px;--radius-l:20px;
 --shadow-s:0 1px 2px rgba(16,40,60,.05),0 2px 8px rgba(16,40,60,.05);
 --ph-lg:185px;--ph-sm:150px}
 *{box-sizing:border-box}
@@ -30,20 +31,20 @@ display:flex;align-items:center;justify-content:center}
 /* 详情页：品牌与导航让位给「返回全部攻略」，按钮随顶栏常驻，不随正文滚走 */
 .tb-back{display:none;align-items:center;gap:7px;text-decoration:none;font-size:14.5px;
 font-weight:700;color:var(--brand);background:var(--brand-soft);border:1px solid #cdeceb;
-padding:5px 14px 5px 11px;border-radius:9px;line-height:1.5}
+padding:5px 14px 5px 11px;border-radius:var(--radius-s);line-height:1.5}
 .tb-back:hover{background:#d8f0f0}
 .tb-back:active{background:#cdeceb}
 .tb-back em{font-style:normal;font-size:15px;line-height:1}
 /* 详情页专属「查看路线图」按钮（在分享按钮左侧，跳转当前攻略路线图） */
 .tb-route{display:none;align-items:center;gap:6px;font-size:14px;font-weight:700;color:var(--brand);
-background:var(--brand-soft);border:1px solid #cdeceb;padding:6px 16px;border-radius:9px;
+background:var(--brand-soft);border:1px solid #cdeceb;padding:6px 16px;border-radius:var(--radius-s);
 line-height:1.5;cursor:pointer;text-decoration:none;margin-left:auto}
 .tb-route:hover{background:#d8f0f0}
 .tb-route:active{background:#cdeceb}
 .tb-route em{font-style:normal;font-size:15px;line-height:1}
 /* 详情页专属分享按钮（自定义分享菜单，全平台通用） */
 .tb-share{display:none;align-items:center;gap:6px;font-size:14px;font-weight:700;color:var(--brand);
-background:var(--brand-soft);border:1px solid #cdeceb;padding:6px 16px;border-radius:9px;
+background:var(--brand-soft);border:1px solid #cdeceb;padding:6px 16px;border-radius:var(--radius-s);
 line-height:1.5;cursor:pointer;font-family:inherit;position:relative}
 .tb-share:active{background:#cdeceb}
 html[data-view]:not([data-view="home"]) .topbar .brand,
@@ -65,7 +66,7 @@ color:#fff;padding:58px 18px 48px;text-align:center}
 
 /* ===== 二级分类筛选：省份 / 地级市 ===== */
 .fbar{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 18px;
-margin:24px 0 20px;box-shadow:0 1px 3px rgba(16,24,40,.04)}
+margin:24px 0 20px;box-shadow:var(--shadow-s)}
 .frow{display:flex;align-items:flex-start;gap:12px}
 .frow+.frow{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
 .flab{flex:none;width:52px;font-size:13px;color:var(--muted);font-weight:600;line-height:31px}
@@ -82,7 +83,7 @@ cursor:pointer;font-family:inherit;line-height:1.65}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;padding-bottom:8px}
 .gcard{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
 text-decoration:none;color:inherit;display:flex;flex-direction:column;transition:.2s;
-box-shadow:0 1px 3px rgba(16,24,40,.04)}
+box-shadow:var(--shadow-s)}
 .gcard:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(16,24,40,.10);border-color:#b8e6e6}
 .gcard:active{transform:scale(.985)}
 .gcard .cov{position:relative;aspect-ratio:16/9;overflow:hidden;background:#eceef1}
@@ -102,7 +103,7 @@ font-weight:700;letter-spacing:4px}
 white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gcard .sub{color:var(--muted);font-size:13.5px;margin:0 0 13px;line-height:1.65}
 .tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:13px}
-.tags span{font-size:11.5px;color:#8a5a4e;background:var(--brand-soft);border-radius:6px;padding:2px 8px}
+.tags span{font-size:11.5px;color:var(--brand-dark);background:var(--brand-soft);border-radius:6px;padding:2px 8px}
 .meta{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#4b5563;
 margin-top:auto;padding-top:12px;border-top:1px dashed var(--line)}
 .meta b{color:var(--brand)}
@@ -124,17 +125,17 @@ padding:32px 18px 30px}
 border-radius:999px;padding:5px 14px;font-size:13px}
 .gmain{max-width:900px;margin:0 auto;padding:0 18px 44px}
 .toc-box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;
-margin-top:22px;box-shadow:0 1px 3px rgba(16,24,40,.04)}
+margin-top:22px;box-shadow:var(--shadow-s)}
 .toc-t{font-size:12.5px;color:var(--muted);font-weight:600;letter-spacing:1.5px;margin-bottom:10px}
 .toc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.toc-grid a{color:#333;text-decoration:none;font-size:13.5px;padding:10px;border-radius:9px;
-background:#faf8f7;border:1px solid #f1e9e7;text-align:center;line-height:1.35;
+.toc-grid a{color:#333;text-decoration:none;font-size:13.5px;padding:10px;border-radius:var(--radius-s);
+background:var(--bg-soft);border:1px solid var(--line);text-align:center;line-height:1.35;
 overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .toc-grid a:hover{background:var(--brand-soft);color:var(--brand)}
 .toc-grid a:active{background:var(--brand-soft);color:var(--brand)}
 section.sec{margin:24px 0;scroll-margin-top:66px}
 .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:24px 26px;
-box-shadow:0 1px 3px rgba(16,24,40,.04)}
+box-shadow:var(--shadow-s)}
 .card h2{font-size:20px;margin:0 0 18px;display:flex;align-items:center;gap:12px;
 padding-bottom:14px;border-bottom:1px solid var(--line);line-height:1.5}
 h2 .num{flex:none;width:28px;height:28px;border-radius:50%;background:var(--brand-soft);
@@ -167,18 +168,18 @@ border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg)
 box-shadow:inset -16px 0 10px -10px rgba(16,24,40,.22)}
 table{border-collapse:collapse;width:100%;font-size:15px;min-width:420px}
 th,td{padding:11px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
-thead th{background:#faf8f7;font-weight:600;color:#444;white-space:nowrap}
+thead th{background:var(--bg-soft);font-weight:600;color:#444;white-space:nowrap}
 tbody tr:nth-child(even){background:#fcfcfd}
 tbody tr:last-child td{border-bottom:none}
-.tip{background:#fffaf4;border:1px solid #f6e3cb;border-left:3px solid var(--brand2);
-border-radius:12px;padding:12px 16px;margin:14px 0;font-size:14.5px;color:#7a4a17}
-.tip-k{display:inline-block;font-weight:700;color:#b45309;margin-right:8px}
+.tip{background:var(--tip-bg);border:1px solid var(--tip-line);border-left:3px solid var(--brand2);
+border-radius:12px;padding:12px 16px;margin:14px 0;font-size:14.5px;color:var(--tip-ink)}
+.tip-k{display:inline-block;font-weight:700;color:var(--tip-ink-2);margin-right:8px}
 .tip-k:after{content:"·"}
 
 /* 时间轴 */
 .tl{position:relative;margin:8px 0 4px;padding-left:6px}
 .tl:before{content:"";position:absolute;left:62px;top:14px;bottom:14px;width:2px;
-background:linear-gradient(180deg,#f0c8c0,#f3e2d3)}
+background:linear-gradient(180deg,#b9e2e2,#d8f0f0)}
 .tl-item{position:relative;display:flex;gap:18px;padding:8px 0}
 .tl-t{flex:none;width:52px;text-align:right;font-size:14px;font-weight:700;color:var(--brand);
 padding-top:2px;line-height:1.5}
@@ -219,7 +220,7 @@ background:var(--brand-soft);border-radius:6px;padding:2px 9px;margin-bottom:7px
 .alt-tag{display:inline-block;font-weight:700;font-size:12px;border-radius:6px;padding:1px 7px;margin:0 5px 2px 0;color:#fff}
 .alt-a{background:#0891b2}
 .alt-b{background:#d97706}
-.ml-cost{margin-top:8px;font-size:13px;font-weight:700;color:#b45309}
+.ml-cost{margin-top:8px;font-size:13px;font-weight:700;color:var(--tip-ink-2)}
 
 /* 图集：可点击放大（灯箱），角标提示 */
 .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-top:16px}
@@ -305,10 +306,10 @@ html:not(.js) #v-home{display:block}
  #sidetoc{display:block;position:fixed;top:84px;right:14px;width:150px;
   max-height:calc(100vh - 130px);overflow:auto;z-index:15;
   background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 7px;
-  box-shadow:0 1px 3px rgba(16,24,40,.06);font-size:12.5px}
+  box-shadow:var(--shadow-s);font-size:12.5px}
  #sidetoc .st-t{font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:1.5px;
   padding:2px 8px 8px}
- #sidetoc a{display:block;padding:5px 8px;border-radius:7px;color:var(--ink);
+ #sidetoc a{display:block;padding:5px 8px;border-radius:var(--radius-s);color:var(--ink);
   text-decoration:none;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
  #sidetoc a.on{background:var(--brand-soft);color:var(--brand);font-weight:700}
 }

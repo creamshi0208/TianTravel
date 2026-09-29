@@ -1,6 +1,6 @@
 /* app-shell.js —— 攻略详情页「手机 App 壳」
    不动攻略原文档 DOM。从已加载视图按 11 章模板的 class 体系提取内容，
-   组装成 6 Tab（首页/行程/美食/花销/准备/图集）+ 底部导航。
+   组装成 5 Tab（首页/行程/美食/花销/准备·图集）+ 底部导航。
    壳始终构建（桌面也有），显示由 app-shell.css 的 @media(max-width:640px) 控制：
    手机看 App 壳、桌面看完整文档、打印不受影响。
    不符模板（缺「每日详细行程」章节，如象山旧结构）→ 不建壳，自动退回文档视图。 */
@@ -11,9 +11,8 @@ var NAV = [
   ['home',  '首页', 'M3 11l9-8 9 8M5 9.5V20h14V9.5M10 20v-5h4v5'],
   ['route', '行程', 'M12 21s-6.5-5.7-6.5-10.6a6.5 6.5 0 1 1 13 0C18.5 15.3 12 21 12 21Zm0-8.4m-2.2 0a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0-4.4 0'],
   ['food',  '美食', 'M4.5 11.5h15a7.5 7.5 0 0 1-15 0ZM2.5 20.5h19M9.5 3.5c-.6 1.5-.6 2.3 0 3.8M14 3.5c-.6 1.5-.6 2.3 0 3.8'],
-  ['money', '花销', 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9 8l3 3.5L15 8M12 11.5V17M9.5 13h5M9.5 15.2h5'],
-  ['prep',  '准备', 'M5 6h4M5 12h4M5 18h4M13 6h7M13 12h7M13 18h7'],
-  ['photos','图集', 'M4 5.5h16v13H4zM4 15l4.5-4L12 14l3-2.5 5 4.5M15.5 9.3a1 1 0 1 0-2 0a1 1 0 0 0 2 0']
+  ['money', '预算', 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9 8l3 3.5L15 8M12 11.5V17M9.5 13h5M9.5 15.2h5'],
+  ['prep',  '前瞻', 'M5 6h4M5 12h4M5 18h4M13 6h7M13 12h7M13 18h7']
 ];
 
 function chapterTab(t){
@@ -23,11 +22,11 @@ function chapterTab(t){
   if(/提示/.test(t)) return 'prep';
   if(/清单/.test(t)) return 'prep';
   if(/天气|穿衣/.test(t)) return 'prep';
-  if(/速查|地址/.test(t)) return 'photos';
-  if(/实拍/.test(t)) return 'photos';
+  if(/速查|地址/.test(t)) return 'prep';
+  if(/实拍/.test(t)) return 'prep';
   return null;
 }
-var SEC_TAB = {1:'money',2:'route',3:'route',4:'money',5:'prep',6:'route',7:'food',8:'route',9:'photos',10:'prep',11:'prep'};
+var SEC_TAB = {1:'money',2:'route',3:'route',4:'money',5:'prep',6:'route',7:'food',8:'route',9:'prep',10:'prep',11:'prep'};
 function secTitle(sec){
   var h2 = sec.querySelector('h2');
   return h2 ? h2.textContent.replace(/\s+/g,'') : '';
@@ -264,8 +263,8 @@ function paintTlPages(pages){
   });
 }
 
-function buildRouteTab(sec, viewId, spotsSec){
-  var wrap = el('ap-tab');
+/* 按 h3.day 把「每日详细行程」章节切成天分组（行程 Tab 与首页 Day 卡共用） */
+function extractDayGroups(sec){
   var card = sec.querySelector('.card') || sec;
   var h2 = card.querySelector('h2');
   var days = [], cur = null;
@@ -278,20 +277,72 @@ function buildRouteTab(sec, viewId, spotsSec){
       cur.nodes.push(ch);
     }
   });
+  return days;
+}
+/* 每天一个主题 emoji：按 Day 标题（退而求其次当天正文）关键词挑最贴切的图标，
+   比千篇一律的日历图标直观得多 */
+function dayEmoji(title, bodyText){
+  var t = (title || '') + ' ' + (bodyText || '').slice(0, 400);
+  if(/赶海|海边|沙滩/.test(t)) return '🏖';
+  if(/博物馆|考古|遗址|展览|科技馆/.test(t)) return '🏛';
+  if(/红色|起义|革命|烈士|纪念/.test(t)) return '🚩';
+  if(/乐园|游乐园|摩天轮/.test(t)) return '🎡';
+  if(/漂流|溯溪|玩水|溪/.test(t)) return '🚣';
+  if(/夜游|夜景|夜市|灯光|喷泉/.test(t)) return '🌃';
+  if(/古镇|古城|老街|街区|汉服/.test(t)) return '🏮';
+  if(/动物园|熊猫/.test(t)) return '🐼';
+  if(/爬山|登山|雪山|峡谷/.test(t)) return '⛰';
+  if(/返程|返沪|返航|回家/.test(t)) return '🚄';
+  return '📍';
+}
+/* 从当天分组取纯文本（挑 emoji / 摘要用） */
+function dayBodyText(d){
+  var x = [];
+  d.nodes.forEach(function(n){ x.push(n.textContent || ''); });
+  return x.join(' ');
+}
+/* Day 页顶部的一句话总结：日期 + 当天动线链（优先概览表的「景点/动线」列，
+   没有则从当天加粗景点 / 时间线标题现拼）。放在页面流里，随内容滚走，不吸顶 */
+function daySumLine(title, ov, pg){
+  var segs = [];
+  var t = (title || '').replace(/^Day\s*\d+\s*[：:]?\s*/, '');
+  var dateSeg = t.split('—')[0].trim();
+  if(dateSeg) segs.push(dateSeg);
+  var chain = (ov && ov.route) || '';
+  if(!chain && pg){
+    var names = [];
+    pg.querySelectorAll('.tl-item .tl-a strong').forEach(function(s){
+      var x = s.textContent.replace(/\s+/g,'').trim();
+      if(x && names.indexOf(x) < 0) names.push(x);
+    });
+    if(!names.length){
+      pg.querySelectorAll('.tl-a').forEach(function(a){
+        if(names.length >= 5) return;
+        var x = (a.textContent || '').replace(/\s+/g,'').trim();
+        if(x) names.push(x);
+      });
+    }
+    chain = names.join(' → ');
+  }
+  if(chain) segs.push(chain);
+  return segs.join('\n');
+}
+
+function buildRouteTab(sec, viewId, spotsSec, ovRows){
+  var wrap = el('ap-tab');
+  var days = extractDayGroups(sec);
   if(!days.length) return null;
-  /* Day 胶囊只显示「Day N」（图标式），当天主题放在胶囊下方；
-     rail 整体 position:sticky 吸顶常驻（见 app-shell.css），滚到哪都能切天 */
+  /* Day 胶囊只显示「Day N」+ 当天主题 emoji，rail 吸顶常驻（见 app-shell.css）；
+     日期与当天动线一句话总结放在每天页面的顶部，随内容滚走，不占吸顶栏 */
   var railWrap = el('ap-rail-wrap');
   var rail = el('ap-rail');
-  var railTheme = el('ap-rail-theme');
   var pages = el('ap-rail-pages');
-  var CAL_ICON = 'M4 5.5h16v14.5H4zM4 10h16M8.5 3.2v4M15.5 3.2v4';
-  function themeOf(t){ return t.replace(/^Day\s*\d+\s*[：:·]\s*/, ''); }
   days.forEach(function(d, i){
     var b = document.createElement('button');
     b.type = 'button';
     b.className = 'ap-day' + (i === 0 ? ' on' : '');
-    b.innerHTML = svgIcon(CAL_ICON, 15) + '<b></b>';
+    b.innerHTML = '<i class="em"></i><b></b>';
+    b.querySelector('.em').textContent = dayEmoji(d.title, dayBodyText(d));
     b.querySelector('b').textContent = 'Day ' + (i+1);
     b.setAttribute('aria-label', d.title);
     rail.appendChild(b);
@@ -303,6 +354,10 @@ function buildRouteTab(sec, viewId, spotsSec){
       n.querySelectorAll && n.querySelectorAll('[id]').forEach(function(e){ e.removeAttribute('id'); });
       pg.appendChild(n);
     });
+    /* 一句话总结放每页最顶上（不吸顶） */
+    var sum = el('ap-day-sum');
+    sum.textContent = daySumLine(d.title, ovRows && ovRows[i], pg);
+    pg.insertBefore(sum, pg.firstChild);
     pages.appendChild(pg);
     b.addEventListener('click', function(){
       if(b.classList.contains('on')) return;
@@ -310,13 +365,15 @@ function buildRouteTab(sec, viewId, spotsSec){
       pages.querySelectorAll('.ap-day-page').forEach(function(x){ x.classList.remove('on'); });
       b.classList.add('on');
       pg.classList.add('on');
-      railTheme.textContent = themeOf(d.title);
       var sc = b.closest('.ap-main'); if(sc) sc.scrollTop = 0;   /* 切天回顶部 */
     });
   });
-  railTheme.textContent = themeOf(days[0].title);
+  /* 供首页 Day 卡联动：选中第 i 天（触发对应胶囊的 click，切页+回顶部） */
+  wrap.__selectDay = function(i){
+    var b = rail.children[i];
+    if(b) b.click();
+  };
   railWrap.appendChild(rail);
-  railWrap.appendChild(railTheme);
   wrap.appendChild(railWrap);
   wrap.appendChild(pages);
   /* 景点地址 + 导航按钮：内联注入到详细行程对应条目 */
@@ -360,10 +417,10 @@ function buildHomeTab(view, parts){
   }
   var cd = buildCountdown(view);
   if(cd) wrap.appendChild(cd);
-  var ov = buildOverviewCards(parts);
+  var ov = buildOverviewCards(parts, parts.daily);
   if(ov) wrap.appendChild(ov);
   var quick = el('ap-quick');
-  [['route','每日行程'],['money','交通与预算'],['food','餐饮推荐'],['photos','实拍图集']].forEach(function(q){
+  [['route','每日行程'],['money','交通与预算'],['food','餐饮推荐'],['prep','准备与图集']].forEach(function(q){
     var b = document.createElement('button');
     b.type = 'button';
     b.dataset.goto = q[0];
@@ -389,8 +446,9 @@ function buildCountdown(view){
 }
 
 /* 概览表 → 「每天一个主题」卡片流（参考 dali 站首页）。
-   解析第二章 table：Day 徽标 + 日期 + 主题 + 其余列拼成动线说明。 */
-function buildOverviewCards(parts){
+   解析第二章 table：Day 徽标 + 日期 + 主题 + 动线说明；
+   再从「每日详细行程」补齐餐饮（🍜）与住宿（🏨），首页概括更完整。 */
+function buildOverviewCards(parts, dailySec){
   if(!parts.overview) return null;
   var table = parts.overview.querySelector('table');
   if(!table) return null;
@@ -405,13 +463,46 @@ function buildOverviewCards(parts){
     else if(/景点|动线|路线|行程/.test(h)) idx.route = i;
     else if(/住宿/.test(h)) idx.stay = i;
   });
+  /* 详细行程按天分组：提取当天餐饮条目与住宿条目（原文档未被改动，无 emoji 前缀） */
+  var dayGroups = dailySec ? extractDayGroups(dailySec) : [];
+  var mealsOf = function(dg){
+    if(!dg) return [];
+    var out = [];
+    dg.nodes.forEach(function(n){
+      n.querySelectorAll && n.querySelectorAll('.tl-a').forEach(function(a){
+        var x = (a.textContent || '').replace(/\s+/g, ' ').trim();
+        if(/早餐|午餐|晚餐|夜宵|下午茶/.test(x) && out.length < 3){
+          if(x.length > 18) x = x.slice(0, 17) + '…';
+          if(out.indexOf(x) < 0) out.push(x);
+        }
+      });
+    });
+    return out;
+  };
+  var stayOf = function(dg){
+    if(!dg) return '';
+    var hit = '';
+    dg.nodes.forEach(function(n){
+      if(hit) return;
+      n.querySelectorAll && n.querySelectorAll('.tl-a').forEach(function(a){
+        if(hit) return;
+        var x = (a.textContent || '').replace(/\s+/g, ' ').trim();
+        if(/酒店|民宿|客栈|入住/.test(x) && x.length <= 24) hit = x;
+      });
+    });
+    return hit;
+  };
   var wrap = el('ap-days');
   var cap = el('ap-sec-cap'); cap.textContent = '每天一个主题';
   wrap.appendChild(cap);
+  var ovRows = [];
   Array.prototype.forEach.call(rows, function(tr, ri){
     var tds = tr.querySelectorAll('td');
     if(!tds.length) return;
     var g = function(i){ return (i!=null && tds[i]) ? tds[i].textContent.trim() : ''; };
+    var dg = dayGroups[ri] || null;
+    var row = { date: g(idx.date), route: g(idx.route), stay: g(idx.stay) };
+    ovRows.push(row);
     var dayTag = g(0) || ('Day ' + (ri+1));
     var card = el('ap-dcard');
     var top = el('ap-dcard-top');
@@ -430,10 +521,25 @@ function buildOverviewCards(parts){
       detail = extra.join(' ');
     }
     if(detail){ var d = el('ap-dcard-detail'); d.textContent = detail; card.appendChild(d); }
+    /* 补全：当天餐饮与住宿（概览表没有的列，从详细行程提取） */
+    var meals = mealsOf(dg);
+    if(meals.length){
+      var m = el('ap-dcard-sub');
+      m.textContent = '🍜 ' + meals.join('；');
+      card.appendChild(m);
+    }
+    var stay = (idx.stay!=null && g(idx.stay)) || stayOf(dg);
+    if(stay){
+      var s = el('ap-dcard-sub');
+      s.textContent = '🏨 ' + stay;
+      card.appendChild(s);
+    }
     card.dataset.goto = 'route';
+    card.dataset.day = ri;          /* 点卡直达行程 Tab 的对应 Day 页 */
     card.setAttribute('role', 'button');
     wrap.appendChild(card);
   });
+  parts.__ovRows = ovRows;   /* 行程 Tab 的一句话总结复用同一份动线数据 */
   return wrap;
 }
 
@@ -519,9 +625,9 @@ function buildShell(viewId){
 
   var built = {};
   built.home = buildHomeTab(view, parts);
-  var routeTab = buildRouteTab(parts.daily, viewId, parts.spots);
+  var routeTab = buildRouteTab(parts.daily, viewId, parts.spots, parts.__ovRows);
   if(routeTab) built.route = routeTab;
-  ['food','money','prep','photos'].forEach(function(tab){
+  ['food','money','prep'].forEach(function(tab){
     var box = el('ap-tab');
     (parts[tab] || []).forEach(function(sec){ cloneInto(sec, box); });
     if(tab === 'food') linkFoodMeals(box);   /* 店名 → 高德搜索定位 */
@@ -534,7 +640,7 @@ function buildShell(viewId){
     tabWrap.appendChild(built[n[0]]);
     var b = document.createElement('button');
     b.type = 'button';
-    b.innerHTML = svgIcon(n[2]) + '<span>' + n[1] + '</span>';
+    b.innerHTML = svgIcon(n[2], 24) + '<span>' + n[1] + '</span>';
     b.addEventListener('click', function(){ showTab(n[0]); });
     nav.appendChild(b);
   });
@@ -551,7 +657,14 @@ function buildShell(viewId){
   }
   tabWrap.addEventListener('click', function(e){
     var q = e.target.closest && e.target.closest('[data-goto]');
-    if(q){ e.preventDefault(); showTab(q.getAttribute('data-goto')); }
+    if(q){
+      e.preventDefault();
+      showTab(q.getAttribute('data-goto'));
+      /* 带天索引的卡片（首页 Day 卡）：连对应 Day 页一起选中 */
+      if(q.dataset.day != null && built.route && built.route.__selectDay){
+        built.route.__selectDay(+q.dataset.day);
+      }
+    }
   });
 
   back.addEventListener('click', function(){

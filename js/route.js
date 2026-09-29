@@ -14,7 +14,9 @@
     var d = parseInt((window.__routeParams && window.__routeParams.day) || '', 10);
     return (d >= 1) ? d - 1 : 0;
   }
-  var DAY_COLORS = ['#0ea5a4', '#7c3aed', '#d97706', '#dc2626', '#2563eb', '#16a34a', '#db2777', '#0891b2'];
+  /* Day 配色：品牌青蓝同色系 8 阶，明暗交替保证相邻两天在地图上可区分
+     （与 style.css 的 --brand/--brand2 渐变一脉相承，不再用彩虹色） */
+  var DAY_COLORS = ['#0b7f80', '#0ea5e9', '#0d9488', '#0369a1', '#0891b2', '#2563eb', '#0f766e', '#1d4ed8'];
  /* 每种交通方式固定一色：相同方式颜色相同，线色/光标点/编号统一取此色 */
   var MODE_COLOR = { car: '#4a7f92', bus: '#e8863a', metro: '#9061c4', bike: '#2f9e6b', walk: '#12a5b8', auto: '#8a94a6' };
  var TYPE_META = {

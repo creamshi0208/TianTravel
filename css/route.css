@@ -1,129 +1,136 @@
-/* route.css —— 路线规划页专属样式（从 route.html 内联提取） */
+/* route.css —— 路线规划页专属样式（从 route.html 内联提取）
+   ⚠️ 作用域约定：本文件所有组件规则都挂在
+      :is(.view[data-view="route"], body.page-route)
+      两个根之下 —— 前者是 SPA 路线视图，后者是 iframe 内嵌（第六章 route-frame）。
+   这样 route.css 不会与 style.css 的同名类互相覆盖
+   （历史上 .chip / .brand / .hint 都被全局泄漏覆盖过：hero 胶囊变灰、
+    表格横滑提示被改字号）。例外只有三类全局规则：
+   ① body.page-route / html[data-view="route"] 的 SPA 集成规则；
+   ② .route-toast（JS 挂在 document.body 上）；
+   ③ iframe 的 .embed 覆盖（body.page-route.embed）。 */
 
 body.page-route { overflow: hidden; }
-.route-shell {
+
+:is(.view[data-view="route"], body.page-route) .route-shell {
   position: fixed; inset: 0; z-index: 1;
   display: flex; flex-direction: column;
   background: var(--bg);
 }
-.route-top {
+:is(.view[data-view="route"], body.page-route) .route-top {
   flex: 0 0 auto; display: flex; align-items: center; flex-wrap: wrap; gap: 14px;
   padding: 10px 16px; background: var(--card); border-bottom: 1px solid var(--line);
   box-shadow: var(--shadow-s);
 }
-.route-top .brand { font-weight: 700; color: var(--brand-dark); font-size: 17px; white-space: nowrap; }
-.route-top .trip-title-label { flex: 1 1 auto; min-width: 0; font-size: 15px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.route-top .trip-title-input {
+:is(.view[data-view="route"], body.page-route) .route-top .brand { font-weight: 700; color: var(--brand-dark); font-size: 17px; white-space: nowrap; }
+:is(.view[data-view="route"], body.page-route) .route-top .trip-title-label { flex: 1 1 auto; min-width: 0; font-size: 15px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:is(.view[data-view="route"], body.page-route) .route-top .trip-title-input {
   flex: 1 1 auto; min-width: 120px; border: 1px solid var(--line); border-radius: var(--radius-s);
   padding: 7px 10px; font-size: 14px; background: var(--bg-soft); color: var(--ink);
 }
-.route-top .top-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-left: auto; }
-.route-main { flex: 1 1 auto; display: flex; min-height: 0; }
-.route-side {
+:is(.view[data-view="route"], body.page-route) .route-top .top-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+:is(.view[data-view="route"], body.page-route) .route-main { flex: 1 1 auto; display: flex; min-height: 0; }
+:is(.view[data-view="route"], body.page-route) .route-side {
   flex: 0 0 400px; max-width: 92vw; overflow-y: auto; padding: 14px;
   background: var(--bg); border-right: 1px solid var(--line);
   display: flex; flex-direction: column; gap: 14px;
 }
-.route-map-wrap { flex: 1 1 auto; position: relative; min-width: 0; }
-#map-canvas { position: absolute; inset: 0; }
-.map-tip {
+:is(.view[data-view="route"], body.page-route) .route-map-wrap { flex: 1 1 auto; position: relative; min-width: 0; }
+:is(.view[data-view="route"], body.page-route) #map-canvas { position: absolute; inset: 0; }
+:is(.view[data-view="route"], body.page-route) .map-tip {
   position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
   background: rgba(31, 41, 55, .85); color: #fff; font-size: 13px;
   padding: 6px 14px; border-radius: 999px; z-index: 5; display: none; white-space: nowrap;
 }
-.map-tip.show { display: block; }
-.panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-s); padding: 13px 14px; }
-.panel h2 { margin: 0 0 10px; font-size: 15px; color: var(--ink); display: flex; align-items: center; gap: 8px; }
-.panel h2 .step-badge { background: var(--brand-soft); color: var(--brand-dark); font-size: 12px; border-radius: 999px; padding: 1px 9px; font-weight: 600; }
-.field-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-.field-row label { font-size: 13px; color: var(--ink-2); flex: 0 0 auto; }
-input[type="text"], input[type="number"] {
+:is(.view[data-view="route"], body.page-route) .map-tip.show { display: block; }
+:is(.view[data-view="route"], body.page-route) .map-tip { font-weight: 600; }
+:is(.view[data-view="route"], body.page-route) .panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-s); padding: 13px 14px; }
+:is(.view[data-view="route"], body.page-route) .panel h2 { margin: 0 0 10px; font-size: 15px; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+:is(.view[data-view="route"], body.page-route) .panel h2 .step-badge { background: var(--brand-soft); color: var(--brand-dark); font-size: 12px; border-radius: 999px; padding: 1px 9px; font-weight: 600; }
+:is(.view[data-view="route"], body.page-route) .field-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+:is(.view[data-view="route"], body.page-route) .field-row label { font-size: 13px; color: var(--ink-2); flex: 0 0 auto; }
+:is(.view[data-view="route"], body.page-route) input[type="text"],
+:is(.view[data-view="route"], body.page-route) input[type="number"] {
   border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px 10px;
   font-size: 14px; background: #fff; color: var(--ink); width: 100%; min-width: 0;
 }
-.btn {
+:is(.view[data-view="route"], body.page-route) .btn {
   border: none; border-radius: var(--radius-s); padding: 8px 14px; font-size: 14px; cursor: pointer;
   background: var(--brand); color: #fff; white-space: nowrap; font-weight: 500;
   transition: filter .15s ease;
 }
-.btn:hover { filter: brightness(1.08); }
-.btn:disabled { opacity: .5; cursor: not-allowed; }
-.btn.ghost { background: var(--bg-soft); color: var(--ink); border: 1px solid var(--line); }
-.btn.small { padding: 4px 10px; font-size: 12.5px; }
-.btn.warn { background: var(--warm); }
-.chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-.chip {
+:is(.view[data-view="route"], body.page-route) .btn:hover { filter: brightness(1.08); }
+:is(.view[data-view="route"], body.page-route) .btn:disabled { opacity: .5; cursor: not-allowed; }
+:is(.view[data-view="route"], body.page-route) .btn.ghost { background: var(--bg-soft); color: var(--ink); border: 1px solid var(--line); }
+:is(.view[data-view="route"], body.page-route) .btn.small { padding: 4px 10px; font-size: 12.5px; }
+:is(.view[data-view="route"], body.page-route) .btn.warn { background: var(--warm); }
+:is(.view[data-view="route"], body.page-route) .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+:is(.view[data-view="route"], body.page-route) .chip {
   font-size: 12.5px; padding: 3px 11px; border-radius: 999px; cursor: pointer; user-select: none;
   background: var(--bg-soft); color: var(--ink-2); border: 1px solid var(--line);
 }
-.chip.on { background: var(--brand); border-color: var(--brand); color: #fff; }
-.result-list { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
-.result-item {
+:is(.view[data-view="route"], body.page-route) .chip.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+:is(.view[data-view="route"], body.page-route) .result-list { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+:is(.view[data-view="route"], body.page-route) .result-item {
   display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px;
   border: 1px solid var(--line); border-radius: var(--radius-s); background: #fff;
 }
-.result-item .r-main { flex: 1 1 auto; min-width: 0; }
-.result-item .r-name { font-size: 13.5px; font-weight: 600; color: var(--ink); word-break: break-all; }
-.result-item .r-addr { font-size: 12px; color: var(--ink-3); margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.hint { font-size: 12.5px; color: var(--ink-3); line-height: 1.6; }
-.hint.err { color: var(--danger); }
-.day-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
-.day-tab {
+:is(.view[data-view="route"], body.page-route) .result-item .r-main { flex: 1 1 auto; min-width: 0; }
+:is(.view[data-view="route"], body.page-route) .result-item .r-name { font-size: 13.5px; font-weight: 600; color: var(--ink); word-break: break-all; }
+:is(.view[data-view="route"], body.page-route) .result-item .r-addr { font-size: 12px; color: var(--ink-3); margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+:is(.view[data-view="route"], body.page-route) .hint { font-size: 12.5px; color: var(--ink-3); line-height: 1.6; }
+:is(.view[data-view="route"], body.page-route) .hint.err { color: var(--danger); }
+:is(.view[data-view="route"], body.page-route) .day-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+:is(.view[data-view="route"], body.page-route) .day-tab {
   font-size: 13px; padding: 5px 13px; border-radius: 999px; cursor: pointer;
   border: 1.5px solid var(--line); background: #fff; color: var(--ink-2); user-select: none;
 }
-.day-tab.on { color: #fff; border-color: transparent; }
-.day-card { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #fff; }
-.day-card + .day-card { margin-top: 10px; }
-.day-head {
+:is(.view[data-view="route"], body.page-route) .day-tab.on { color: #fff; border-color: transparent; }
+:is(.view[data-view="route"], body.page-route) .day-card { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #fff; }
+:is(.view[data-view="route"], body.page-route) .day-card + .day-card { margin-top: 10px; }
+:is(.view[data-view="route"], body.page-route) .day-head {
   display: flex; align-items: center; gap: 8px; padding: 9px 14px; color: #fff; font-size: 15px; font-weight: 600;
 }
-.day-head .day-sum { margin-left: auto; font-weight: 400; font-size: 12px; opacity: .92; white-space: nowrap; }
+:is(.view[data-view="route"], body.page-route) .day-head .day-sum { margin-left: auto; font-weight: 400; font-size: 12px; opacity: .92; white-space: nowrap; }
 /* day-head 兼当日切换按钮：激活天实色、非激活天白底彩字，点击切换 */
-.day-head.switch { cursor: pointer; user-select: none; transition: filter .12s ease; }
-.day-head.switch:hover { filter: brightness(.97); }
-.day-head .dh-tag { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.day-head .dh-arrow { font-size: 12px; font-weight: 600; opacity: .95; white-space: nowrap; }
-.day-card.on { box-shadow: 0 2px 10px rgba(16, 40, 60, .10); }
-.stop-row { border-bottom: 1px dashed var(--line); }
-.stop-row:last-child { border-bottom: none; }
-.stop-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; }
-.stop-no {
+:is(.view[data-view="route"], body.page-route) .day-head.switch { cursor: pointer; user-select: none; transition: filter .12s ease; }
+:is(.view[data-view="route"], body.page-route) .day-head.switch:hover { filter: brightness(.97); }
+:is(.view[data-view="route"], body.page-route) .day-head .dh-tag { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+:is(.view[data-view="route"], body.page-route) .day-head .dh-arrow { font-size: 12px; font-weight: 600; opacity: .95; white-space: nowrap; }
+:is(.view[data-view="route"], body.page-route) .day-card.on { box-shadow: 0 2px 10px rgba(16, 40, 60, .10); }
+:is(.view[data-view="route"], body.page-route) .stop-row { border-bottom: 1px dashed var(--line); }
+:is(.view[data-view="route"], body.page-route) .stop-row:last-child { border-bottom: none; }
+:is(.view[data-view="route"], body.page-route) .stop-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; }
+:is(.view[data-view="route"], body.page-route) .stop-no {
   flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; color: #fff;
   font-size: 13px; display: flex; align-items: center; justify-content: center; font-weight: 600;
 }
-.stop-main { flex: 1 1 auto; min-width: 0; }
-.stop-name { display: block; font-size: 14.5px; color: var(--ink); word-break: break-all; line-height: 1.5; }
-.stop-meta { display: block; font-size: 12.5px; color: var(--ink-3); line-height: 1.5; margin-top: 1px; }
-.stop-tools { display: flex; align-items: center; gap: 6px; padding: 2px 12px 9px 46px; flex-wrap: wrap; }
-.stop-tools .seg-mode { max-width: none; }
-.stop-tools button {
-  border: 1px solid var(--line); background: var(--bg-soft); border-radius: 6px; cursor: pointer;
+:is(.view[data-view="route"], body.page-route) .stop-main { flex: 1 1 auto; min-width: 0; }
+:is(.view[data-view="route"], body.page-route) .stop-name { display: block; font-size: 14.5px; color: var(--ink); word-break: break-all; line-height: 1.5; }
+:is(.view[data-view="route"], body.page-route) .stop-meta { display: block; font-size: 12.5px; color: var(--ink-3); line-height: 1.5; margin-top: 1px; }
+:is(.view[data-view="route"], body.page-route) .stop-tools { display: flex; align-items: center; gap: 6px; padding: 2px 12px 9px 46px; flex-wrap: wrap; }
+:is(.view[data-view="route"], body.page-route) .stop-tools .seg-mode { max-width: none; }
+:is(.view[data-view="route"], body.page-route) .stop-tools button {
+  border: 1px solid var(--line); background: var(--bg-soft); border-radius: var(--radius-s); cursor: pointer;
   font-size: 12.5px; padding: 3px 8px; color: var(--ink-2); line-height: 1.4;
 }
-.stop-tools button:hover { background: var(--brand-soft); color: var(--brand-dark); }
-.stop-tools select { border: 1px solid var(--line); border-radius: 6px; font-size: 12.5px; padding: 2px 4px; background: #fff; color: var(--ink-2); }
-.stop-ops { display: flex; gap: 3px; flex: 0 0 auto; align-items: center; }
-.stop-ops button {
-  border: 1px solid var(--line); background: var(--bg-soft); border-radius: 6px; cursor: pointer;
+:is(.view[data-view="route"], body.page-route) .stop-tools button:hover { background: var(--brand-soft); color: var(--brand-dark); }
+:is(.view[data-view="route"], body.page-route) .stop-tools select { border: 1px solid var(--line); border-radius: 6px; font-size: 12.5px; padding: 2px 4px; background: #fff; color: var(--ink-2); }
+:is(.view[data-view="route"], body.page-route) .stop-ops { display: flex; gap: 3px; flex: 0 0 auto; align-items: center; }
+:is(.view[data-view="route"], body.page-route) .stop-ops button {
+  border: 1px solid var(--line); background: var(--bg-soft); border-radius: var(--radius-s); cursor: pointer;
   font-size: 12.5px; padding: 3px 7px; color: var(--ink-2); line-height: 1.4;
 }
-.stop-ops button:hover { background: var(--brand-soft); color: var(--brand-dark); }
-.stop-ops select { border: 1px solid var(--line); border-radius: 6px; font-size: 12.5px; padding: 2px 3px; background: #fff; color: var(--ink-2); max-width: 80px; }
-.seg-mode { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 6px; font-size: 12.5px; padding: 2px 3px;
+:is(.view[data-view="route"], body.page-route) .stop-ops button:hover { background: var(--brand-soft); color: var(--brand-dark); }
+:is(.view[data-view="route"], body.page-route) .stop-ops select { border: 1px solid var(--line); border-radius: 6px; font-size: 12.5px; padding: 2px 3px; background: #fff; color: var(--ink-2); max-width: 80px; }
+:is(.view[data-view="route"], body.page-route) .seg-mode { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 6px; font-size: 12.5px; padding: 2px 3px;
   background: var(--bg-soft); color: var(--brand-dark); max-width: 82px; }
-.day-empty { padding: 12px; font-size: 12.5px; color: var(--ink-3); text-align: center; }
-.est-badge { font-size: 11px; color: var(--warm); border: 1px solid var(--warm); border-radius: 4px; padding: 0 4px; margin-left: 6px; }
-.gen-bar { display: flex; gap: 8px; align-items: center; }
-.gen-bar .btn.gen { flex: 1 1 auto; font-size: 15px; padding: 11px 0; }
-.route-status { font-size: 12.5px; color: var(--ink-2); text-align: center; padding: 4px 0; min-height: 22px; }
-@media (max-width: 860px) {
-  .route-main { flex-direction: column-reverse; }
-  .route-side { flex: 1 1 auto; width: auto; max-width: none; border-right: none; border-top: 1px solid var(--line); }
-  .route-map-wrap { flex: 0 0 42vh; }
-}
+:is(.view[data-view="route"], body.page-route) .day-empty { padding: 12px; font-size: 12.5px; color: var(--ink-3); text-align: center; }
+:is(.view[data-view="route"], body.page-route) .est-badge { font-size: 11px; color: var(--warm); border: 1px solid var(--warm); border-radius: 4px; padding: 0 4px; margin-left: 6px; }
+:is(.view[data-view="route"], body.page-route) .gen-bar { display: flex; gap: 8px; align-items: center; }
+:is(.view[data-view="route"], body.page-route) .gen-bar .btn.gen { flex: 1 1 auto; font-size: 15px; padding: 11px 0; }
+:is(.view[data-view="route"], body.page-route) .route-status { font-size: 12.5px; color: var(--ink-2); text-align: center; padding: 4px 0; min-height: 22px; }
 
-/* ===== SPA 集成：route 视图激活时隐藏站点 topbar/footer ===== */
+/* ===== SPA 集成：route 视图激活时隐藏站点 topbar/footer（全局规则，不收作用域） ===== */
 html[data-view="route"] .topbar,
 html[data-view="route"] footer,
 html[data-view="route"] #toTop,
@@ -132,54 +139,58 @@ html[data-view="route"] body,
 html[data-view="route"] main { overflow: hidden; }
 html[data-view="route"] .view[data-view="route"] { display: block; }
 html[data-view="route"] .view[data-view="route"].on { display: block; }
-.route-shell { position: fixed; inset: 0; z-index: 1; }
 
 /* ===== Phase 3: 体验统一 ===== */
 /* 路线页「返回攻略」链接 */
-.back-to-guides {
+:is(.view[data-view="route"], body.page-route) .back-to-guides {
   font-size: 14px; font-weight: 600; color: var(--brand-dark);
   text-decoration: none; white-space: nowrap;
-  padding: 5px 12px; border-radius: 8px; background: var(--brand-soft);
+  padding: 5px 12px; border-radius: var(--radius-s); background: var(--brand-soft);
   border: 1px solid #cdeceb; transition: background .15s ease;
 }
-.back-to-guides:hover { background: #d8f0f0; }
+:is(.view[data-view="route"], body.page-route) .back-to-guides:hover { background: #d8f0f0; }
 
 /* 攻略页顶栏「查看路线图」按钮样式在 style.css（.tb-route） */
 
 /* ===== Phase 4: 手动定位 ===== */
-.loc-warn { font-size: 11px; color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px; padding: 0 5px; margin-left: 5px; vertical-align: middle; white-space: nowrap; }
-.loc-manual { font-size: 11px; color: #0e7490; background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 4px; padding: 0 5px; margin-left: 5px; vertical-align: middle; white-space: nowrap; }
-.stop-row.unlocated { background: #fffbeb; }
-.stop-row.unlocated .stop-item { background: #fffbeb; }
-.btn-locate { background: var(--brand-soft); color: var(--brand-dark); border: 1px solid #cdeceb; border-radius: 6px; cursor: pointer; font-size: 12px; padding: 3px 9px; line-height: 1.5; white-space: nowrap; transition: all .15s ease; }
-.btn-locate:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
-.stop-item { position: relative; }
-.stop-ops { margin-left: auto; flex: 0 0 auto; }
-.map-tip { font-weight: 600; }
+:is(.view[data-view="route"], body.page-route) .loc-warn { font-size: 11px; color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px; padding: 0 5px; margin-left: 5px; vertical-align: middle; white-space: nowrap; }
+:is(.view[data-view="route"], body.page-route) .loc-manual { font-size: 11px; color: #0e7490; background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 4px; padding: 0 5px; margin-left: 5px; vertical-align: middle; white-space: nowrap; }
+:is(.view[data-view="route"], body.page-route) .stop-row.unlocated { background: #fffbeb; }
+:is(.view[data-view="route"], body.page-route) .stop-row.unlocated .stop-item { background: #fffbeb; }
+:is(.view[data-view="route"], body.page-route) .btn-locate { background: var(--brand-soft); color: var(--brand-dark); border: 1px solid #cdeceb; border-radius: var(--radius-s); cursor: pointer; font-size: 12px; padding: 3px 9px; line-height: 1.5; white-space: nowrap; transition: all .15s ease; }
+:is(.view[data-view="route"], body.page-route) .btn-locate:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
+:is(.view[data-view="route"], body.page-route) .stop-item { position: relative; }
+:is(.view[data-view="route"], body.page-route) .stop-ops { margin-left: auto; flex: 0 0 auto; }
 
 /* ===== 每段交通方式切换按钮（日卡片 stop-meta 里的一排小胶囊） ===== */
-.seg-modes { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-.seg-m {
+:is(.view[data-view="route"], body.page-route) .seg-modes { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+:is(.view[data-view="route"], body.page-route) .seg-m {
   border: 1px solid var(--line); background: #fff; color: var(--ink-2); cursor: pointer;
   font-size: 11px; font-family: inherit; line-height: 1; padding: 4px 8px; border-radius: 999px;
   white-space: nowrap; transition: all .15s ease;
 }
-.seg-m:hover { color: var(--ink); border-color: var(--brand); }
-.seg-m.on { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
-.seg-m:active { transform: scale(.94); }
+:is(.view[data-view="route"], body.page-route) .seg-m:hover { color: var(--ink); border-color: var(--brand); }
+:is(.view[data-view="route"], body.page-route) .seg-m.on { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+:is(.view[data-view="route"], body.page-route) .seg-m:active { transform: scale(.94); }
 
-/* ===== 轻提示 toast ===== */
+/* ===== 轻提示 toast（JS 直接挂 document.body，保持全局） ===== */
 .route-toast {
   position: fixed; left: 50%; top: 24px; transform: translate(-50%, -14px);
   z-index: 9999; max-width: 86vw;
   background: rgba(17, 24, 39, .93); color: #fff; font-size: 13.5px; line-height: 1.5;
-  padding: 9px 18px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .22);
+  padding: 9px 18px; border-radius: var(--radius-s); box-shadow: 0 8px 24px rgba(0, 0, 0, .22);
   opacity: 0; pointer-events: none; transition: opacity .28s ease, transform .28s ease;
 }
 .route-toast.on { opacity: 1; transform: translate(-50%, 0); }
 
-/* ===== 内嵌到攻略第六章（iframe 内）的紧凑模式 ===== */
-.embed .route-top { padding: 8px 12px; gap: 10px; }
-.embed .route-top .brand { font-size: 15px; }
-.embed .route-side { flex: 0 0 320px; padding: 10px; gap: 10px; }
-.embed .route-shell { background: transparent; }
+/* ===== 内嵌到攻略第六章（iframe 内）的紧凑模式（仅 iframe，body.page-route.embed） ===== */
+body.page-route.embed .route-top { padding: 8px 12px; gap: 10px; }
+body.page-route.embed .route-top .brand { font-size: 15px; }
+body.page-route.embed .route-side { flex: 0 0 320px; padding: 10px; gap: 10px; }
+body.page-route.embed .route-shell { background: transparent; }
+
+@media (max-width: 860px) {
+  :is(.view[data-view="route"], body.page-route) .route-main { flex-direction: column-reverse; }
+  :is(.view[data-view="route"], body.page-route) .route-side { flex: 1 1 auto; width: auto; max-width: none; border-right: none; border-top: 1px solid var(--line); }
+  :is(.view[data-view="route"], body.page-route) .route-map-wrap { flex: 0 0 42vh; }
+}
