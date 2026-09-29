@@ -525,18 +525,8 @@ function buildShell(viewId){
     var box = el('ap-tab');
     (parts[tab] || []).forEach(function(sec){ cloneInto(sec, box); });
     if(tab === 'food') linkFoodMeals(box);   /* 店名 → 高德搜索定位 */
-    if(tab === 'photos'){
-      var tp = el('ap-tp-mount');
-      box.insertBefore(tp, box.firstChild);
-      box.__tpMount = tp;
-    }
     if(box.children.length) built[tab] = box;
   });
-  var photosBox = built['photos'];
-  if (photosBox && photosBox.__tpMount && window.WB_Photos) {
-    try { window.WB_Photos.mount(photosBox.__tpMount, viewId); }
-    catch (err) { console.error('[cloud-photos] mount failed', err); }
-  }
 
   var order = NAV.filter(function(n){ return built[n[0]]; });
   var nav = el('ap-nav');
