@@ -98,13 +98,70 @@
     border-radius:11px;padding:9px 11px}
   .ap-poi-addr{font-size:12.5px;color:var(--ink-2);line-height:1.6}
   .ap-poi-open{font-size:12px;color:var(--ink-3);line-height:1.6;margin-top:2px}
-  .ap-poi .poi-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-  .ap-poi .poi-links a{display:inline-flex;align-items:center;padding:6px 14px;
-    border-radius:999px;font-size:12.5px;font-weight:700;text-decoration:none;
-    background:var(--brand);color:#fff;line-height:1.4}
-  .ap-poi .poi-links a:nth-child(2){background:#fff;color:var(--brand-dark);
-    border:1px solid #b8dede}
-  .ap-poi .poi-links a:active{opacity:.85}
+
+  /* 高德定位链接：地址行 / 店名（点击跳高德定位点或搜索） */
+  .ap-map-link{color:var(--brand-dark);text-decoration:none;-webkit-tap-highlight-color:transparent}
+  .ap-poi-addr.ap-map-link{display:block}
+  .ml-main .ap-map-link{font-weight:600;line-height:1.5}
+  .ap-map-link:active{opacity:.6}
+  /* 「导航到这里 / 周边搜索」按钮：壳内一律不展示（地址/店名本身已是高德链接） */
+  .ap-app .poi-links{display:none!important}
+
+  /* 美食 tab：卡片按餐次着色（早餐橙 / 午餐青 / 晚餐夜宵紫），店名/备选店名是高德链接 */
+  .ap-tab .meal{border-left:3px solid var(--brand)}
+  .ap-tab .meal.f-break{border-left-color:#f59e0b;background:#fffaf1}
+  .ap-tab .meal.f-lunch{border-left-color:#0ea5a4;background:#f2fbfb}
+  .ap-tab .meal.f-dinner{border-left-color:#7c3aed;background:#faf7ff}
+  .ap-tab .meal.f-break .slot{background:#fdf1dc;color:#b45309}
+  .ap-tab .meal.f-lunch .slot{background:#e6f6f6;color:#0b7f80}
+  .ap-tab .meal.f-dinner .slot{background:#f1e9ff;color:#6d28d9}
+  .ap-tab .ml-alt .ap-map-link{color:var(--brand-dark)}
+
+  /* 图集 tab：📷 我的旅拍（云端相册） */
+  .ap-tp-head{display:flex;align-items:center;gap:8px;margin:14px 0 10px}
+  .ap-tp-title{font-size:16px;font-weight:800;color:var(--ink)}
+  .ap-tp-count{font-size:12px;color:var(--ink-3)}
+  .ap-tp-gap{flex:1}
+  .ap-tp-btn{border:none;background:var(--brand);color:#fff;font-family:inherit;
+    font-size:13px;font-weight:700;padding:8px 16px;border-radius:999px;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .ap-tp-btn:disabled{opacity:.55}
+  .ap-tp-btn2{border:1px solid var(--line);background:#fff;color:var(--ink-2);
+    font-family:inherit;font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;
+    cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .ap-tp-note{font-size:12px;color:var(--ink-3);line-height:1.7}
+  .ap-tp-warn{background:#fffbeb;border:1px solid #fde68a;border-radius:11px;
+    padding:10px 12px;font-size:12.5px;color:#92400e;line-height:1.7;margin-bottom:10px}
+  .ap-tp-warn a{color:var(--brand-dark);font-weight:700}
+  .ap-tp-err{font-size:12px;color:#b45309;min-height:0;line-height:1.6;
+    margin:6px 0;white-space:pre-wrap}
+  .ap-tp-forms{background:#fff;border:1px solid var(--line);border-radius:14px;
+    padding:13px 14px;margin-bottom:12px}
+  .ap-tp-form h4{margin:0 0 9px;font-size:14px;color:var(--ink)}
+  .ap-tp-form[hidden]{display:none}
+  .ap-tp-form input{width:100%;box-sizing:border-box;border:1px solid var(--line);
+    border-radius:10px;padding:9px 11px;font-family:inherit;font-size:13.5px;margin-bottom:8px;
+    background:var(--bg-soft);color:var(--ink)}
+  .ap-tp-form input:focus{outline:none;border-color:var(--brand)}
+  .ap-tp-row{display:flex;gap:8px}
+  .ap-tp-row input{flex:1;min-width:0}
+  .ap-tp-row .ap-tp-btn2{flex:none;white-space:nowrap}
+  .ap-tp-links{display:flex;gap:14px;margin-top:6px}
+  .ap-tp-links button{border:none;background:none;color:var(--brand-dark);
+    font-family:inherit;font-size:12px;cursor:pointer;padding:0;
+    text-decoration:underline;-webkit-tap-highlight-color:transparent}
+  .ap-tp-uprow{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .ap-tp-uprow .ap-tp-note{flex:1;min-width:150px}
+  .ap-tp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .ap-tp-fig{position:relative;margin:0;border-radius:10px;overflow:hidden;background:var(--bg-soft)}
+  .ap-tp-fig img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+  .ap-tp-del{position:absolute;top:5px;right:5px;width:24px;height:24px;border:none;
+    border-radius:50%;background:rgba(17,24,39,.62);color:#fff;font-size:12px;
+    line-height:1;cursor:pointer;padding:0}
+  .ap-tp-empty{grid-column:1/-1;font-size:13px;color:var(--ink-3);
+    text-align:center;padding:22px 8px;background:#fff;border:1px dashed var(--line);
+    border-radius:12px}
+  .ap-tp-more{text-align:center;margin-top:10px}
 
   /* 行程页：住宿与备用地点（兜底块） */
   .ap-day-spots{margin-top:16px;padding-top:4px}
@@ -114,26 +171,25 @@
   .ap-day-spots .rt-h{font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:3px}
   .ap-day-spots .rt-d{font-size:12.5px;color:var(--ink-2);line-height:1.6}
   .ap-day-spots .rt-m{font-size:12px;color:var(--ink-3);line-height:1.6;margin-top:2px}
-  .ap-day-spots .poi-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-  .ap-day-spots .poi-links a{display:inline-flex;align-items:center;padding:6px 14px;
-    border-radius:999px;font-size:12.5px;font-weight:700;text-decoration:none;
-    background:var(--brand);color:#fff;line-height:1.4}
-  .ap-day-spots .poi-links a:nth-child(2){background:#fff;color:var(--brand-dark);
-    border:1px solid #b8dede}
 
-  /* 行程 Tab：Day rail */
-  .ap-rail{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;
-    -webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px}
+  /* 行程 Tab：Day 胶囊（只显示 Day N）+ 当天主题，rail 整体吸顶常驻 */
+  .ap-rail-wrap{position:sticky;top:0;z-index:30;
+    margin:-14px -14px 12px;padding:10px 14px 9px;
+    background:rgba(247,249,252,.96);
+    -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line)}
+  .ap-rail{display:flex;gap:8px;overflow-x:auto;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 0 0}
   .ap-rail::-webkit-scrollbar{display:none}
   .ap-day{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;
-    border:1.5px solid var(--line);background:#fff;border-radius:13px;
-    padding:8px 6px;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
-  .ap-day b{font-size:13px;font-weight:800;color:var(--ink-2)}
-  .ap-day span{font-size:10.5px;color:var(--ink-3);white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis;max-width:100%}
-  .ap-day.on{border-color:var(--brand);background:var(--brand-soft)}
-  .ap-day.on b{color:var(--brand-dark)}
-  .ap-day.on span{color:var(--brand)}
+    border:1.5px solid var(--line);background:#fff;border-radius:12px;color:var(--ink-2);
+    padding:6px 4px 5px;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+  .ap-day svg{opacity:.7}
+  .ap-day b{font-size:12px;font-weight:800}
+  .ap-day.on{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-dark)}
+  .ap-day.on svg{opacity:1}
+  .ap-rail-theme{margin-top:7px;font-size:13px;font-weight:700;color:var(--ink);
+    text-align:center;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ap-day-title{display:none}
   .ap-day-page{display:none}
   .ap-day-page.on{display:block}
@@ -145,10 +201,42 @@
   .ap-main .ap-tab>.apc:first-child{margin-top:0}
   .ap-jump{cursor:pointer}
 
-  /* 路线图：内嵌高度压缩 */
-  .ap-tab .route-embed{margin-top:16px}
-  .ap-tab .route-embed .re-frame{height:420px}
+  /* 路线图：不再内嵌小图，只留一个图标入口跳全屏 */
+  .ap-route-jump{margin-top:16px}
+  .ap-route-go{display:flex;align-items:center;gap:11px;background:#fff;
+    border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:14px;
+    padding:13px 14px;text-decoration:none;box-shadow:var(--shadow-s);
+    -webkit-tap-highlight-color:transparent}
+  .ap-route-go:active{background:var(--brand-soft)}
+  .ap-route-go svg{color:var(--brand);flex:none}
+  .ap-rg-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .ap-rg-t b{font-size:14.5px;color:var(--ink);font-weight:700}
+  .ap-rg-t i{font-style:normal;font-size:12px;color:var(--ink-3)}
+  .ap-route-go em{font-style:normal;color:var(--ink-3);font-size:18px;font-weight:700;line-height:1}
 
-  /* 时间线：整屏宽更从容 */
-  .ap-day-page .tl{padding-left:2px}
+  /* 时间线 → 卡片堆叠 v2：卡片背景按类型带淡色 + 左竖条贯穿成「脊线」，
+     时间做成浅色胶囊嵌在卡内左上（不再悬浮在卡片外），层次干净 */
+  .ap-day-page .tl{display:flex;flex-direction:column;gap:12px;padding:2px 0 0}
+  .ap-day-page .tl-item{position:relative;display:block;
+    background:#f2fbfb;border:1px solid var(--line);border-left:3px solid var(--brand);
+    border-radius:13px;padding:11px 13px 11px;margin:0;box-shadow:var(--shadow-s)}
+  .ap-day-page .tl-t{display:inline-block;width:auto;text-align:left;
+    background:var(--brand-soft);color:var(--brand-dark);font-size:11.5px;font-weight:800;
+    padding:3px 9px;border-radius:999px;letter-spacing:.3px;line-height:1.3;margin:0 0 3px}
+  /* 相邻卡片之间用一小段竖线把左侧色条连成贯穿的脊线 */
+  .ap-day-page .tl-item + .tl-item::before{content:'';position:absolute;
+    top:-13px;left:0;width:2px;height:13px;background:#b9e2e2}
+  .ap-day-page .tl-c{background:none;border:none;border-radius:0;padding:0;margin-left:0}
+  .ap-day-page .tl-a{font-size:15px;font-weight:700;line-height:1.45}
+  .ap-day-page .tl-n{margin-top:4px}
+  /* 卡片按内容类型着色：背景淡色 + 左竖条 + 时间胶囊同色系。
+     景点/默认=品牌青；餐饮=橙；住宿=蓝；交通赶路=灰；小结提示=紫 */
+  .ap-day-page .tl-item.k-food{border-left-color:#f59e0b;background:#fffaf1}
+  .ap-day-page .tl-item.k-food .tl-t{background:#fdf1dc;color:#b45309}
+  .ap-day-page .tl-item.k-stay{border-left-color:#0284c7;background:#f4fafe}
+  .ap-day-page .tl-item.k-stay .tl-t{background:#e0f2fe;color:#0369a1}
+  .ap-day-page .tl-item.k-move{border-left-color:#94a3b8;background:#f6f8fa}
+  .ap-day-page .tl-item.k-move .tl-t{background:#eef2f7;color:#5a6b7f}
+  .ap-day-page .tl-item.k-tip{border-left-color:#7c3aed;background:#faf7ff}
+  .ap-day-page .tl-item.k-tip .tl-t{background:#f1e9ff;color:#6d28d9}
 }

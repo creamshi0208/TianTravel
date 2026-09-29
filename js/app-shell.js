@@ -132,6 +132,8 @@ function mergeSpotsIntoDays(spotsSec, pages){
       var clone = c.node.cloneNode(true);
       clone.removeAttribute('id');
       clone.querySelectorAll('[id]').forEach(function(e){ e.removeAttribute('id'); });
+      /* 按钮不进壳；地址行 → 高德定位点链接 */
+      linkifyAddr(c.node, clone);
       box.appendChild(clone);
     });
     last.appendChild(box);
@@ -165,6 +167,32 @@ function pickTlItem(page, keys, pass){
   }
   return null;
 }
+/* 从速查卡的「导航到这里」链接提取 to=lng,lat → 高德 marker 定位点链接。
+   行程卡地址行 / 兜底卡地址都用它；按钮本身不再展示。 */
+function amapPinHref(rt){
+  var nav = rt.querySelector('.poi-links a[href*="to="]');
+  if(!nav) return '';
+  var m = (nav.getAttribute('href') || '').match(/[?&]to=([0-9.]+),([0-9.]+),([^&]+)/);
+  if(!m) return '';
+  var nm = m[3]; try{ nm = decodeURIComponent(nm); }catch(err){}
+  return 'https://uri.amap.com/marker?position=' + m[1] + ',' + m[2] +
+    '&name=' + encodeURIComponent(nm) + '&src=tiantian&callnative=0';
+}
+/* 把 .rt-d 地址行变成高德定位点链接（有坐标才变，否则保持纯文本） */
+function linkifyAddr(rt, clone){
+  var href = amapPinHref(rt);
+  clone.querySelectorAll('.poi-links').forEach(function(x){ x.remove(); });
+  var d = clone.querySelector('.rt-d');
+  if(d && href){
+    var a = document.createElement('a');
+    a.href = href; a.target = '_blank'; a.rel = 'noopener';
+    a.className = 'ap-poi-addr ap-map-link';
+    a.textContent = '📍 ' + d.textContent.trim();
+    a.title = '点击在高德地图中查看定位点';
+    d.textContent = '';
+    d.appendChild(a);
+  }
+}
 function injectPoiInline(item, rt){
   var tc = item.querySelector('.tl-c');
   if(!tc) return;
@@ -183,24 +211,59 @@ function injectPoiInline(item, rt){
   var addr = rt.querySelector('.rt-d');
   var open = rt.querySelector('.rt-m');
   if(addr){
-    var l1 = el('ap-poi-addr');
-    l1.textContent = '📍 ' + addr.textContent.trim();
-    box.appendChild(l1);
+    var href = amapPinHref(rt);
+    if(href){
+      /* 地址整行做成高德定位点链接；「导航到这里/周边搜索」按钮不再展示 */
+      var a1 = document.createElement('a');
+      a1.href = href; a1.target = '_blank'; a1.rel = 'noopener';
+      a1.className = 'ap-poi-addr ap-map-link';
+      a1.textContent = '📍 ' + addr.textContent.trim();
+      a1.title = '点击在高德地图中查看定位点';
+      box.appendChild(a1);
+    } else {
+      var l1 = el('ap-poi-addr');
+      l1.textContent = '📍 ' + addr.textContent.trim();
+      box.appendChild(l1);
+    }
   }
   if(open){
     var l2 = el('ap-poi-open');
     l2.textContent = '🕐 ' + open.textContent.trim();
     box.appendChild(l2);
   }
-  var links = rt.querySelector('.poi-links');
-  if(links){
-    var lk = links.cloneNode(true);
-    lk.removeAttribute('id');
-    lk.querySelectorAll('[id]').forEach(function(e){ e.removeAttribute('id'); });
-    box.appendChild(lk);
-  }
+  /* 原「导航到这里 / 周边搜索」按钮：不再克隆进壳 */
   tc.appendChild(box);
 }
+/* 时间线卡片按内容类型着色：景点=品牌青(默认)、餐饮=橙、住宿=蓝、交通赶路=灰、小结提示=紫。
+   关键词匹配顺序很重要：先吃住（「早餐，纪念馆周边逛逛」不能因为带景点名就判成景点），
+   再交通；「步行/地铁到酒店办理入住」含地铁但入住优先 → 住宿。
+   同时给标题前加类型图标、卡片背景带一层同色系淡色（见 app-shell.css）。 */
+var TL_TYPE = {
+  'k-tip':  { emo: '💡' },
+  'k-food': { emo: '🍜' },
+  'k-stay': { emo: '🏨' },
+  'k-move': { emo: '🚗' },
+  'k-play': { emo: '🏞' }
+};
+function paintTlPages(pages){
+  pages.querySelectorAll('.ap-day-page .tl-item').forEach(function(it){
+    var a = it.querySelector('.tl-a');
+    var t = a ? (a.textContent || '').replace(/\s+/g, '') : '';
+    if(!t) return;
+    var k = '';
+    if(/小结|提示|注意事项/.test(t)) k = 'k-tip';
+    else if(/早餐|午餐|晚餐|小吃|夜宵|下午茶|咖啡/.test(t)) k = 'k-food';
+    else if(/酒店|民宿|入住|退房/.test(t)) k = 'k-stay';
+    else if(/抵达|到达|出发|返程|返回|地铁|打车|高铁|火车|机场|候车|乘车|坐车|赶/.test(t)) k = 'k-move';
+    if(k) it.classList.add(k);
+    /* 标题前加类型 emoji（防重复加：已以该 emoji 开头就跳过） */
+    var emo = TL_TYPE[k || 'k-play'].emo;
+    if(a && a.textContent.slice(0, emo.length) !== emo){
+      a.textContent = emo + ' ' + a.textContent;
+    }
+  });
+}
+
 function buildRouteTab(sec, viewId, spotsSec){
   var wrap = el('ap-tab');
   var card = sec.querySelector('.card') || sec;
@@ -216,20 +279,23 @@ function buildRouteTab(sec, viewId, spotsSec){
     }
   });
   if(!days.length) return null;
+  /* Day 胶囊只显示「Day N」（图标式），当天主题放在胶囊下方；
+     rail 整体 position:sticky 吸顶常驻（见 app-shell.css），滚到哪都能切天 */
+  var railWrap = el('ap-rail-wrap');
   var rail = el('ap-rail');
+  var railTheme = el('ap-rail-theme');
   var pages = el('ap-rail-pages');
+  var CAL_ICON = 'M4 5.5h16v14.5H4zM4 10h16M8.5 3.2v4M15.5 3.2v4';
+  function themeOf(t){ return t.replace(/^Day\s*\d+\s*[：:·]\s*/, ''); }
   days.forEach(function(d, i){
     var b = document.createElement('button');
     b.type = 'button';
     b.className = 'ap-day' + (i === 0 ? ' on' : '');
-    b.innerHTML = '<b></b><span></span>';
+    b.innerHTML = svgIcon(CAL_ICON, 15) + '<b></b>';
     b.querySelector('b').textContent = 'Day ' + (i+1);
-    b.querySelector('span').textContent = d.title.replace(/^Day\s*\d+\s*[：:·]?/, '').slice(0, 14);
+    b.setAttribute('aria-label', d.title);
     rail.appendChild(b);
     var pg = el('ap-day-page' + (i === 0 ? ' on' : ''));
-    var th = el('ap-day-title');
-    th.textContent = d.title;
-    pg.appendChild(th);
     d.nodes.forEach(function(node){
       var n = node.cloneNode(true);
       /* 克隆件一律去 id，防与原文档视图重复 */
@@ -239,27 +305,31 @@ function buildRouteTab(sec, viewId, spotsSec){
     });
     pages.appendChild(pg);
     b.addEventListener('click', function(){
+      if(b.classList.contains('on')) return;
       rail.querySelectorAll('.ap-day').forEach(function(x){ x.classList.remove('on'); });
       pages.querySelectorAll('.ap-day-page').forEach(function(x){ x.classList.remove('on'); });
       b.classList.add('on');
       pg.classList.add('on');
+      railTheme.textContent = themeOf(d.title);
+      var sc = b.closest('.ap-main'); if(sc) sc.scrollTop = 0;   /* 切天回顶部 */
     });
   });
-  wrap.appendChild(rail);
+  railTheme.textContent = themeOf(days[0].title);
+  railWrap.appendChild(rail);
+  railWrap.appendChild(railTheme);
+  wrap.appendChild(railWrap);
   wrap.appendChild(pages);
   /* 景点地址 + 导航按钮：内联注入到详细行程对应条目 */
   if(spotsSec) mergeSpotsIntoDays(spotsSec, pages);
-  /* 路线图（可视化，保留） */
+  /* 卡片按内容类型着色（左竖条 + 时间胶囊） */
+  paintTlPages(pages);
+  /* 路线图：不再内嵌小图 iframe，只留一个图标入口跳全屏路线图 */
   var g = encodeURIComponent(viewId);
-  var emb = document.createElement('div');
-  emb.className = 'route-embed';
-  emb.innerHTML =
-    '<div class="re-head"><span class="re-title">行程路线图</span>' +
-      '<span class="re-sub">按距离表自动生成</span></div>' +
-    '<iframe class="re-frame" title="行程路线图" loading="lazy" scrolling="no" frameborder="0" ' +
-      'src="views/route-frame.html?guide=' + g + '"></iframe>' +
-    '<div class="re-foot"><a class="re-full" href="#/route?guide=' + g + '">全屏打开 →</a></div>';
-  wrap.appendChild(emb);
+  var jump = el('ap-route-jump');
+  jump.innerHTML = '<a class="ap-route-go" href="#/route?guide=' + g + '">' +
+    svgIcon(NAV[1][2], 20) +
+    '<span class="ap-rg-t"><b>行程路线图</b><i>地图 · 距离 · 每段交通方式</i></span><em>›</em></a>';
+  wrap.appendChild(jump);
   return wrap;
 }
 
@@ -367,6 +437,49 @@ function buildOverviewCards(parts){
   return wrap;
 }
 
+/* 美食 tab：店名 → 高德地图搜索定位（攻略里店铺没有坐标，用关键词搜索）。
+   同时按餐次给卡片着色（早餐橙 / 午餐青 / 晚餐紫，见 app-shell.css），
+   并把「备选餐厅」的店名也做成高德搜索链接。 */
+function linkFoodMeals(box){
+  box.querySelectorAll('.meal').forEach(function(m){
+    var name = m.querySelector('.ml-main');
+    if(!name || name.querySelector('a')) return;
+    var kw = name.textContent.replace(/\s+/g, ' ').trim();
+    if(!kw) return;
+    var a = document.createElement('a');
+    a.href = 'https://uri.amap.com/search?keyword=' + encodeURIComponent(kw) + '&src=tiantian&callnative=1';
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.className = 'ap-map-link';
+    a.textContent = kw;
+    a.title = '点击在高德地图中搜索这家店';
+    name.textContent = '';
+    name.appendChild(a);
+    /* 餐次着色 */
+    var st = m.querySelector('.slot');
+    var slotTxt = st ? st.textContent : '';
+    if(/早/.test(slotTxt)) m.classList.add('f-break');
+    else if(/午/.test(slotTxt)) m.classList.add('f-lunch');
+    else if(/晚|夜/.test(slotTxt)) m.classList.add('f-dinner');
+    /* 备选餐厅：按 <br> 分段，每段「备选N：店名（描述）」的店名 → 高德搜索链接 */
+    var alt = m.querySelector('.ml-alt');
+    if(alt && !alt.dataset.apLinked){
+      alt.dataset.apLinked = '1';
+      alt.innerHTML = alt.innerHTML.split(/<br\s*\/?>/i).map(function(seg){
+        var mm = seg.match(/^([\s\S]*?<\/span>)?\s*([^（<]+)/);
+        if(!mm) return seg;
+        var head = mm[1] || '';
+        var altName = mm[2].replace(/备选\d+[：:]\s*/, '').trim();
+        if(!altName || altName.indexOf('）') >= 0) return seg;   /* 没有店名可链 */
+        var href = 'https://uri.amap.com/search?keyword=' + encodeURIComponent(altName) + '&src=tiantian&callnative=1';
+        var tail = seg.slice(mm[0].length);
+        return head + '<a class="ap-map-link" target="_blank" rel="noopener" href="' + href +
+          '" title="点击在高德地图中搜索这家店">' + altName + '</a>' + tail;
+      }).join('<br>');
+    }
+  });
+}
+
 /* ===== 建壳 ===== */
 function buildShell(viewId){
   var view = document.getElementById('v-' + viewId);
@@ -411,8 +524,19 @@ function buildShell(viewId){
   ['food','money','prep','photos'].forEach(function(tab){
     var box = el('ap-tab');
     (parts[tab] || []).forEach(function(sec){ cloneInto(sec, box); });
+    if(tab === 'food') linkFoodMeals(box);   /* 店名 → 高德搜索定位 */
+    if(tab === 'photos'){
+      var tp = el('ap-tp-mount');
+      box.insertBefore(tp, box.firstChild);
+      box.__tpMount = tp;
+    }
     if(box.children.length) built[tab] = box;
   });
+  var photosBox = built['photos'];
+  if (photosBox && photosBox.__tpMount && window.WB_Photos) {
+    try { window.WB_Photos.mount(photosBox.__tpMount, viewId); }
+    catch (err) { console.error('[cloud-photos] mount failed', err); }
+  }
 
   var order = NAV.filter(function(n){ return built[n[0]]; });
   var nav = el('ap-nav');
