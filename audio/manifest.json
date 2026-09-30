@@ -1,0 +1,72 @@
+{
+ "audio/nanchang/tengwangge-main.mp3": {
+  "md5": "0b2807611c83c8c9a797d8a039ef0b73",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "rate": "-8%"
+ },
+ "audio/nanchang/tengwangge-more.mp3": {
+  "md5": "0026e31b18b2c6d0f76511dae6cd1e37",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "rate": "-8%"
+ },
+ "audio/nanchang/bayiqiyi-main.mp3": {
+  "md5": "ac2274f66c29dc5442486bad7fdc2bb9",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "rate": "-8%"
+ },
+ "audio/nanchang/bayiqiyi-more.mp3": {
+  "md5": "fea22ffd301fb40880129c1c8fe39f76",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "rate": "-8%"
+ },
+ "audio/nanchang/haihunhou-main.mp3": {
+  "md5": "d51a58671bf509095b2024ce7bba4faa",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "rate": "-8%"
+ },
+ "audio/nanchang/haihunhou-more.mp3": {
+  "md5": "5978036efb65840da2b79b49cb99b5f7",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "rate": "-8%"
+ },
+ "audio/nanchang/nanchangzhixing-main.mp3": {
+  "md5": "6579bbd6fde165b8d71e9ec248e4bb59",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "rate": "-8%"
+ },
+ "audio/nanchang/nanchangzhixing-more.mp3": {
+  "md5": "27e3d98168016519b8a99617a71b57f4",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "rate": "-8%"
+ },
+ "audio/nanchang/wanshougong-main.mp3": {
+  "md5": "6cd043d36a4515b07427f8e86bcb504d",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "rate": "-8%"
+ },
+ "audio/nanchang/wanshougong-more.mp3": {
+  "md5": "f8e7a627351ed9d3539788cf7723d3c0",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "rate": "-8%"
+ },
+ "audio/nanchang/bayiguangchang-main.mp3": {
+  "md5": "c8055cdcee295f9bf37154cc406c3647",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "rate": "-8%"
+ },
+ "audio/nanchang/bayiguangchang-more.mp3": {
+  "md5": "f986ba0d46ff63d4c4eb2110a26005f2",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "rate": "-8%"
+ },
+ "audio/nanchang/qiushuiguangchang-main.mp3": {
+  "md5": "5284ee957971d8b3a6ee5838541bf2d5",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "rate": "-8%"
+ },
+ "audio/nanchang/qiushuiguangchang-more.mp3": {
+  "md5": "7115208505f748499a8a7828b8313b1c",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "rate": "-8%"
+ }
+}

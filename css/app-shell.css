@@ -132,6 +132,17 @@
   .ap-day-spots .rt-d{font-size:12.5px;color:var(--ink-2);line-height:1.6}
   .ap-day-spots .rt-m{font-size:12px;color:var(--ink-3);line-height:1.6;margin-top:2px}
 
+  /* 讲解卡（🔈 讲给娃听）：内联在行程条目里 / 兜底速查卡里，带 TTS 播放按钮 */
+  .ap-tab .story{margin-top:9px;background:#fff;border:1px solid var(--line);
+    border-left:3px solid var(--brand);border-radius:10px;padding:9px 11px}
+  .ap-tab .story-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px}
+  .ap-tab .story-bar b{font-size:12px;color:var(--brand-dark);letter-spacing:.5px}
+  .ap-tab .story-play{border:1px solid #cdeceb;background:var(--brand-soft);color:var(--brand-dark);
+    font-size:11.5px;font-family:inherit;cursor:pointer;border-radius:999px;padding:3px 10px;
+    line-height:1.5;-webkit-tap-highlight-color:transparent}
+  .ap-tab .story-play:active{background:#d8f0f0}
+  .ap-tab .story p{margin:4px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.7}
+
   /* 行程 Tab：Day 胶囊（只显示 Day N）+ 当天主题，rail 整体吸顶常驻 */
   .ap-rail-wrap{position:sticky;top:0;z-index:30;
     margin:-14px -14px 12px;padding:10px 14px 9px;

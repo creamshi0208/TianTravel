@@ -287,6 +287,8 @@ html:not(.js) #v-home{display:block}
   box-shadow:none!important;border-color:#ccc!important}
  .gcard:hover{transform:none}
  figure.ph::after{display:none}
+ .story-play{display:none!important}
+ .story{background:#fff!important;border-color:#ccc!important}
  a{color:inherit!important;text-decoration:none}
  #sidetoc{display:none!important}
  footer{padding:14px 0 0}
@@ -355,6 +357,17 @@ figure.tl-ph img{height:var(--ph-sm)}
 .pt-tag.t-err{background:#e6f6f6;color:#0b7f80}
 .pt-d{font-size:14px;color:#4b5563;line-height:1.8}
 .pt-d b{color:var(--brand)}
+
+/* ===== 景点讲解卡（讲给娃听 + 语音播放）=====
+   挂在速查卡 .rt 里；App 壳内联注入行程条目时样式走 app-shell.css */
+.story{margin-top:10px;background:var(--brand-soft);border:1px solid #cdeceb;border-radius:10px;padding:10px 13px}
+.story-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.story-bar b{font-size:13px;color:var(--brand-dark);letter-spacing:.5px}
+.story-play{border:1px solid #cdeceb;background:#fff;color:var(--brand-dark);font-size:12px;
+font-family:inherit;cursor:pointer;border-radius:999px;padding:3px 11px;line-height:1.5;
+-webkit-tap-highlight-color:transparent}
+.story-play:active{background:#d8f0f0}
+.story p{margin:6px 0 0;font-size:14px;color:var(--ink-2);line-height:1.9}
 @media(max-width:640px){
  .pt{padding:12px 13px}
  .pt-n{font-size:15px}

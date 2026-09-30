@@ -40,7 +40,10 @@ function classify(view){
     if(/每日|详细行程/.test(t)) out.daily = sec;
     else if(/概览|总览/.test(t)) out.overview = sec;
     else if(/距离|路线/.test(t)) out.dist = sec;
-    else if(/速查|地址|导航/.test(t)) out.spots = sec;
+    else if(/速查|地址|导航/.test(t)){
+      out.spots = sec;                        /* 行程注入的数据源 */
+      (out.prep = out.prep || []).push(sec);  /* 同时进「前瞻」Tab：地址+讲解卡可预习 */
+    }
     else {
       var tab = chapterTab(t);
       if(!tab && n) tab = SEC_TAB[n];
@@ -68,6 +71,8 @@ function cloneInto(sec, mount, extraCls){
     h.textContent = h.textContent.replace(/^[一二三四五六七八九十]+、\s*/, '').replace(/^\s+/, '');
   });
   c.querySelectorAll('.route-embed').forEach(function(x){ x.remove(); });
+  /* 壳内地址行本身就是高德链接，原「导航到这里/周边搜索」按钮一律剥掉 */
+  c.querySelectorAll('.poi-links').forEach(function(x){ x.remove(); });
   c.querySelectorAll('a[href^="#"]').forEach(function(a){
     var h = a.getAttribute('href');
     if(!h || h.indexOf('#/') === 0) return;
@@ -175,7 +180,7 @@ function amapPinHref(rt){
   if(!m) return '';
   var nm = m[3]; try{ nm = decodeURIComponent(nm); }catch(err){}
   return 'https://uri.amap.com/marker?position=' + m[1] + ',' + m[2] +
-    '&name=' + encodeURIComponent(nm) + '&src=tiantian&callnative=0';
+    '&name=' + encodeURIComponent(nm) + '&src=tiantian&coordinate=gaode&callnative=1';
 }
 /* 把 .rt-d 地址行变成高德定位点链接（有坐标才变，否则保持纯文本） */
 function linkifyAddr(rt, clone){
@@ -231,6 +236,14 @@ function injectPoiInline(item, rt){
     box.appendChild(l2);
   }
   /* 原「导航到这里 / 周边搜索」按钮：不再克隆进壳 */
+  /* 讲解卡（🔈 讲给娃听）跟着注入：放地址卡上面，现场走到哪讲到哪 */
+  var story = rt.querySelector('.story');
+  if(story){
+    var sc2 = story.cloneNode(true);
+    sc2.removeAttribute('id');
+    sc2.querySelectorAll && sc2.querySelectorAll('[id]').forEach(function(e){ e.removeAttribute('id'); });
+    tc.appendChild(sc2);
+  }
   tc.appendChild(box);
 }
 /* 时间线卡片按内容类型着色：景点=品牌青(默认)、餐饮=橙、住宿=蓝、交通赶路=灰、小结提示=紫。
@@ -361,6 +374,7 @@ function buildRouteTab(sec, viewId, spotsSec, ovRows){
     pages.appendChild(pg);
     b.addEventListener('click', function(){
       if(b.classList.contains('on')) return;
+      TTS.stop();                      /* 切天停播 */
       rail.querySelectorAll('.ap-day').forEach(function(x){ x.classList.remove('on'); });
       pages.querySelectorAll('.ap-day-page').forEach(function(x){ x.classList.remove('on'); });
       b.classList.add('on');
@@ -586,6 +600,96 @@ function linkFoodMeals(box){
   });
 }
 
+/* ===== 讲解卡语音播放 =====
+   双通道：讲解卡 data-audio 指向预生成的自然语音 MP3（edge-tts 晓晓，音频在 web/audio/），
+   加载/播放失败自动回落设备内置 TTS（Web Speech API）；仍不支持则按钮隐藏退回文字。
+   - 每张讲解卡两个按钮：🔊 听一遍（基础版）/ 🎧 还想听（加长版）
+   - 播放中按钮变 ⏹，再点停止；切 Tab / 切 Day 自动停播 */
+var TTS = {
+  supported: typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window,
+  audio: null,
+  btn: null,
+  reset: function(){
+    if(TTS.audio){ try{ TTS.audio.pause(); }catch(err){} TTS.audio = null; }
+    if(TTS.btn){
+      TTS.btn.innerHTML = TTS.btn.dataset.label || TTS.btn.innerHTML;
+      TTS.btn = null;
+    }
+  },
+  stop: function(){
+    if(TTS.supported){ try{ window.speechSynthesis.cancel(); }catch(err){} }
+    TTS.reset();
+  },
+  setBtn: function(btn){
+    btn.dataset.label = btn.innerHTML;
+    btn.innerHTML = '⏹ 停止';
+    TTS.btn = btn;
+  },
+  speak: function(btn){
+    var box = btn.closest('.story');
+    var part = btn.getAttribute('data-part') === 'more' ? 'more' : 'main';
+    var base = box ? box.getAttribute('data-audio') : '';
+    if(TTS.btn === btn){ TTS.stop(); return; }        /* 正在播这条：再点 = 停止 */
+    TTS.stop();
+    if(base){
+      try{
+        var a = new Audio(base + '-' + part + '.mp3');
+        a.onended = TTS.reset;
+        a.onerror = function(){
+          if(TTS.audio !== a) return;                 /* 已被 stop/reset：不回落 */
+          TTS.audio = null;
+          TTS.ttsSpeak(btn, box, part);
+        };
+        TTS.audio = a;
+        TTS.setBtn(btn);
+        var pr = a.play && a.play();
+        if(pr && pr.catch) pr.catch(function(){
+          if(TTS.audio !== a) return;
+          TTS.audio = null;
+          TTS.ttsSpeak(btn, box, part);
+        });
+        return;
+      }catch(err){ TTS.audio = null; }
+    }
+    TTS.ttsSpeak(btn, box, part);
+  },
+  ttsSpeak: function(btn, box, part){
+    if(!TTS.supported){ btn.style.display = 'none'; return; }
+    var S = window.speechSynthesis;
+    var p = box ? box.querySelector('.story-' + part) : null;
+    var text = p ? (p.textContent || '').replace(/\s+/g, ' ').trim() : '';
+    if(!text) return;
+    var u = new window.SpeechSynthesisUtterance(text);
+    u.lang = 'zh-CN'; u.rate = 0.9; u.pitch = 1;      /* 放慢一点，适合孩子听 */
+    /* 智能选声：优先名字带 Natural/Online/Neural 的在线自然声，
+       其次 zh-CN 非本地引擎，再次任意 zh；都没有就用 u.lang 让系统自选 */
+    var vs = S.getVoices() || [];
+    var best = null, zhAny = null;
+    var score = function(v){
+      if(!/^zh/i.test(v.lang)) return -1;
+      if(zhAny === null) zhAny = v;
+      var s = 0;
+      if(/natural|online|neural/i.test(v.name)) s += 4;
+      if(/^zh([-_]CN)?$/i.test(v.lang)) s += 2;
+      if(!v.localService) s += 1;
+      return s;
+    };
+    for(var i = 0; i < vs.length; i++){
+      var sc = score(vs[i]);
+      if(sc > 0 && (best === null || sc > best._s)){ best = vs[i]; best._s = sc; }
+    }
+    if(best) u.voice = best; else if(zhAny) u.voice = zhAny;
+    u.onend = TTS.reset; u.onerror = TTS.reset;
+    TTS.setBtn(btn);
+    S.speak(u);
+  }
+};
+document.addEventListener('click', function(e){
+  var b = e.target.closest && e.target.closest('.story-play');
+  if(b){ e.preventDefault(); TTS.speak(b); }
+});
+if(TTS.supported){ try{ window.speechSynthesis.getVoices(); }catch(err){} }  /* 提前触发声音列表加载 */
+
 /* ===== 建壳 ===== */
 function buildShell(viewId){
   var view = document.getElementById('v-' + viewId);
@@ -646,6 +750,7 @@ function buildShell(viewId){
   });
   function showTab(id){
     if(!built[id]) id = order[0][0];
+    TTS.stop();                        /* 切 Tab 停播，避免声音串场 */
     order.forEach(function(n, idx){
       var on = n[0] === id;
       built[n[0]].classList.toggle('on', on);
