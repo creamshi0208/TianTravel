@@ -74,6 +74,7 @@ function loadView(id, cb){
       container.innerHTML = html;
       VIEW_CACHE[id] = true;
       container.classList.remove('loading');
+      if(window.TG_updatePhotoStat) window.TG_updatePhotoStat();
       if(cb) cb(id);
     })
     .catch(function(err){
@@ -107,11 +108,16 @@ function jumpTop(){ scrollInstant(0); }
    <title> 和 og:* 在 head 里是写死的，只能描述首页。切进某篇攻略后不同步改写的话，
    分享出去、存书签、翻浏览器历史，显示的都还是「何田田的旅行攻略」，
    对方根本看不出是哪一篇。这里按当前视图实时改。
-   注：og:image 故意没设 —— 单文件站点里图片是 data: URI，微信 / 微博 / Facebook
-   的抓取器一律不认，设了也白设。真想要分享卡片带图，得把封面单独传到仓库里、
-   给它一个 http 地址再来引。 */
+   注：图片已拆成 images/ 下的真实 URL，og:image 在 head 里有静态默认值（南昌封面），
+   这里按视图切换 —— 但微信等抓取器不跑 JS、只认 head 静态值，
+   这里的切换主要保持逻辑一致（书签/调试可见）。 */
 var SITE = '何田田的旅行攻略';
 var TAGLINE = '把路上的细节，留成可复用的路书';
+var OG_BASE = 'https://creamshi0208.github.io/TianTravel/';
+var OG_COVERS = {
+  'nanchang-3d': 'images/nanchang/00_江西_南昌3日亲子游.webp',
+  'anji-2d': 'images/anji/00_封面_安吉2日溯溪漂流.webp'
+};
 function setMeta(sel, val){
   var el = document.querySelector(sel);
   if(el) el.setAttribute('content', val);
@@ -133,6 +139,8 @@ function applyMeta(target){
   setMeta('meta[property="og:title"]', title);
   setMeta('meta[property="og:description"]', desc);
   setMeta('meta[property="og:url"]', location.href);
+  var cov = OG_COVERS[target];
+  if(cov) setMeta('meta[property="og:image"]', OG_BASE + encodeURI(cov));
 }
 
 /* ===== 历史记录标记 =====
@@ -380,23 +388,12 @@ document.addEventListener('click', function(e){
   var btn = document.getElementById('shareBtn');
   if(!btn) return;
   var original = btn.textContent;
-  function showOk(){
-    btn.textContent = '\u2713 \u5df2\u590d\u5236';
-    setTimeout(function(){ btn.textContent = original; }, 1200);
-  }
-  function execCopy(url){
-    var ta = document.createElement('textarea');
-    ta.value = url; ta.style.position='fixed'; ta.style.left='-9999px';
-    document.body.appendChild(ta); ta.select();
-    try{ document.execCommand('copy'); showOk(); }catch(err){}
-    document.body.removeChild(ta);
-  }
   btn.addEventListener('click', function(e){
     e.preventDefault();
-    var url = location.href;
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(url).then(showOk).catch(function(){ execCopy(url); });
-    } else { execCopy(url); }
+    TG_util.copyText(location.href, function(){
+      btn.textContent = '✓ 已复制';
+      setTimeout(function(){ btn.textContent = original; }, 1200);
+    });
   });
 })();
 var CUR = {p: '全部', c: '全部'};
@@ -436,7 +433,7 @@ function pickCity(btn){
    原来「3 篇攻略 / 3 个目的地 / 14 张实拍」和筛选条里的 <i>1</i> 全是写死的，
    加一篇攻略要手改 5 处以上，漏一处就显示错。现在直接从 DOM 里数出来。
    HTML 里仍保留一份写死的值，作为无 JS 时的兜底。 */
-var BUILD_DATE = '2026-09-18';      /* ← 以后重新生成站点时，只改这一处 */
+var BUILD_DATE = '2026-10-01';      /* ← 以后重新生成站点时，只改这一处 */
 (function(){
   function countBy(attr){
     var m = {};
@@ -462,8 +459,17 @@ var BUILD_DATE = '2026-09-18';      /* ← 以后重新生成站点时，只改�
   if(st.length >= 3){
     st[0].textContent = total;                                             /* 篇攻略 */
     st[1].textContent = Object.keys(cc).length;                            /* 个目的地 */
-    st[2].textContent = document.querySelectorAll('figure.ph img').length; /* 张实拍 */
+    /* 视图懒加载：启动时只能数到首页（0 张 figure），数到 0 不能覆盖 HTML 兜底值；
+       之后每加载一篇攻略，loadView 里调 TG_updatePhotoStat 重算 */
+    var n0 = document.querySelectorAll('.view figure.ph img').length;
+    if(n0 > 0) st[2].textContent = n0;                                     /* 张实拍 */
   }
+  window.TG_updatePhotoStat = function(){
+    var b = document.querySelectorAll('#v-home .stat b')[2];
+    if(!b) return;
+    var n = document.querySelectorAll('.view figure.ph img').length;
+    if(n > 0) b.textContent = n;
+  };
   var fl = document.querySelector('footer .fl');
   if(fl) fl.textContent = '生成于 ' + BUILD_DATE;
 })();
@@ -547,20 +553,8 @@ var BUILD_DATE = '2026-09-18';      /* ← 以后重新生成站点时，只改�
 
 /* ===== 景点速查：导航按钮 手机端唤起高德App，失败唤起百度地图App，再失败退回高德网页版 ===== */
 (function(){
-  var UA = navigator.userAgent;
-  var isMobile = /android|iphone|ipad|ipod|harmony/i.test(UA);
-  function tryScheme(url, onFail){
-    var t0 = Date.now(), left = false;
-    function onHide(){ left = true; }
-    document.addEventListener('visibilitychange', onHide);
-    window.addEventListener('pagehide', onHide);
-    setTimeout(function(){
-      document.removeEventListener('visibilitychange', onHide);
-      window.removeEventListener('pagehide', onHide);
-      if(!left && Date.now()-t0 < 3000) onFail();
-    }, 1300);
-    location.href = url; /* 尝试唤起 App */
-  }
+  var isMobile = TG_util.isMobile, isIOS = TG_util.isIOS;
+  var tryScheme = TG_util.tryScheme;
   document.addEventListener('click', function(e){
     var a = e.target.closest && e.target.closest('.poi-links a');
     if(!a) return;
@@ -574,7 +568,6 @@ var BUILD_DATE = '2026-09-18';      /* ← 以后重新生成站点时，只改�
       window.open(href); /* 桌面端没有 App，退回网页版 */
       return;
     }
-    var isIOS = /iphone|ipad|ipod/i.test(UA);
     var amap = (isIOS ? 'iosamap' : 'androidamap')
       + '://viewMap?sourceApplication=tiantravel&poiname=' + encodeURIComponent(name)
       + '&lat=' + lat + '&lon=' + lon + '&dev=0';
@@ -590,34 +583,24 @@ var BUILD_DATE = '2026-09-18';      /* ← 以后重新生成站点时，只改�
 
 /* ===== 景点速查：无坐标的 POI（关键词模式）同样优先唤起高德 App，失败再唤起百度地图 App ===== */
 (function(){
-  var UA = navigator.userAgent;
-  var isMobile = /android|iphone|ipad|ipod/i.test(UA);
-  var isIOS = /iphone|ipad|ipod/i.test(UA);
-  function tryScheme(url, onFail){
-    var t0 = Date.now(), left = false;
-    function onHide(){ left = true; }
-    document.addEventListener('visibilitychange', onHide);
-    window.addEventListener('pagehide', onHide);
-    setTimeout(function(){
-      document.removeEventListener('visibilitychange', onHide);
-      window.removeEventListener('pagehide', onHide);
-      if(!left && Date.now()-t0 < 3000) onFail();
-    }, 1300);
-    location.href = url;
-  }
+  var isMobile = TG_util.isMobile, isIOS = TG_util.isIOS;
+  var tryScheme = TG_util.tryScheme;
+  /* 百度 region 按 href 里的 city=adcode 映射到对应城市（写死一个城市会让其他篇搜不到） */
+  var REGION = { '360100': '南昌市', '330523': '湖州市安吉县', '330225': '宁波市象山县' };
   document.addEventListener('click', function(e){
     var a = e.target.closest && e.target.closest('.poi-links a[data-keyword]');
     if(!a) return;
     e.preventDefault();
     var kw = a.getAttribute('data-keyword');
-    var href = a.getAttribute('href');
+    var href = a.getAttribute('href') || '';
     if(!isMobile){ window.open(href); return; }
+    var cm = (href.match(/[?&]city=(\d{6})/) || [])[1];
     var amap = (isIOS ? 'iosamap' : 'androidamap')
       + '://poi?sourceApplication=tiantravel&keywords=' + encodeURIComponent(kw)
       + '&dev=0' + (isIOS ? '' : '&pkg=com.autonavi.minimap');
     var baidu = (isIOS ? 'baidumap' : 'bdapp')
       + '://map/place/search?query=' + encodeURIComponent(kw)
-      + '&region=' + encodeURIComponent('湖州市安吉县') + '&src=tiantravel';
+      + '&region=' + encodeURIComponent(REGION[cm] || '全国') + '&src=tiantravel';
     tryScheme(amap, function(){
       tryScheme(baidu, function(){
         window.open(href);

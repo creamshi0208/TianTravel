@@ -7,6 +7,38 @@
 (function(){
 'use strict';
 
+/* ===== 共享小工具（app.js 也用；index.html 加载顺序 app-shell.js 在前，挂 window 上） ===== */
+var TG_util = window.TG_util = {
+  isMobile: /android|iphone|ipad|ipod|harmony/i.test(navigator.userAgent),
+  isIOS: /iphone|ipad|ipod/i.test(navigator.userAgent),
+  /* 尝试唤起 App scheme：1.3s 内页面没切走（=没唤起成功）就执行 onFail 兜底 */
+  tryScheme: function (url, onFail) {
+    var t0 = Date.now(), left = false;
+    function onHide() { left = true; }
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', onHide);
+    setTimeout(function () {
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', onHide);
+      if (!left && Date.now() - t0 < 3000) onFail();
+    }, 1300);
+    location.href = url;
+  },
+  /* 复制到剪贴板：优先 navigator.clipboard，失败退回 execCommand；成功后调 ok() */
+  copyText: function (text, ok) {
+    function fb() {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); if (ok) ok(); } catch (err) {}
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { if (ok) ok(); }, fb);
+    } else fb();
+  }
+};
+
 var NAV = [
   ['home',  '首页', 'M3 11l9-8 9 8M5 9.5V20h14V9.5M10 20v-5h4v5'],
   ['route', '行程', 'M12 21s-6.5-5.7-6.5-10.6a6.5 6.5 0 1 1 13 0C18.5 15.3 12 21 12 21Zm0-8.4m-2.2 0a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0-4.4 0'],
@@ -718,23 +750,9 @@ if(TTS.supported){ try{ window.speechSynthesis.getVoices(); }catch(err){} }  /* 
    桌面：直接 window.open 网页版。 */
 function handleMapLinkClick(a){
   var href = a.getAttribute('href') || '';
-  var UA = navigator.userAgent;
-  var isMobile = /android|iphone|ipad|ipod|harmony/i.test(UA);
-  var isIOS = /iphone|ipad|ipod/i.test(UA);
+  var isMobile = TG_util.isMobile, isIOS = TG_util.isIOS;
+  var tryScheme = TG_util.tryScheme;
   if(!isMobile){ window.open(href); return; }
-
-  function tryScheme(url, onFail){
-    var t0 = Date.now(), left = false;
-    function onHide(){ left = true; }
-    document.addEventListener('visibilitychange', onHide);
-    window.addEventListener('pagehide', onHide);
-    setTimeout(function(){
-      document.removeEventListener('visibilitychange', onHide);
-      window.removeEventListener('pagehide', onHide);
-      if(!left && Date.now()-t0 < 3000) onFail();
-    }, 1300);
-    location.href = url;
-  }
 
   /* 坐标模式：marker?position=lng,lat&name=... */
   var mk = href.match(/position=([0-9.]+),([0-9.]+)/);
@@ -877,17 +895,9 @@ function buildShell(viewId){
     else location.replace('#/');
   });
   share.addEventListener('click', function(){
-    var url = location.href;
-    function ok(){ share.textContent = '已复制'; setTimeout(function(){ share.textContent = '分享'; }, 1200); }
-    function fb(){
-      var ta = document.createElement('textarea');
-      ta.value = url; ta.style.position = 'fixed'; ta.style.left = '-9999px';
-      document.body.appendChild(ta); ta.select();
-      try{ document.execCommand('copy'); ok(); }catch(err){}
-      document.body.removeChild(ta);
-    }
-    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, fb);
-    else fb();
+    TG_util.copyText(location.href, function(){
+      share.textContent = '已复制'; setTimeout(function(){ share.textContent = '分享'; }, 1200);
+    });
   });
 
   app.appendChild(main);
