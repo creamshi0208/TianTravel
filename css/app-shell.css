@@ -78,6 +78,7 @@
     -webkit-tap-highlight-color:transparent}
   .ap-quick button:active{background:var(--brand-soft);border-color:#b8e6e6}
   .ap-quick b{font-size:14.5px;color:var(--brand-dark);font-weight:700}
+  .ap-quick .q-sub{display:block;font-size:11.5px;color:var(--ink-3);margin-top:3px}
 
   /* 首页：每天一个主题（概览卡片流，参考 dali 站） */
   .ap-sec-cap{font-size:12px;font-weight:800;color:var(--ink-3);letter-spacing:2px;

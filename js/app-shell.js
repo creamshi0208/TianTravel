@@ -42,7 +42,7 @@ function classify(view){
     else if(/距离|路线/.test(t)) out.dist = sec;
     else if(/速查|地址|导航/.test(t)){
       out.spots = sec;                        /* 行程注入的数据源 */
-      (out.prep = out.prep || []).push(sec);  /* 同时进「前瞻」Tab：地址+讲解卡可预习 */
+      (out.prep = out.prep || []).push(sec);  /* 同时进「前瞻」Tab（讲解卡剥除，避免与行程重复） */
     }
     else {
       var tab = chapterTab(t);
@@ -171,16 +171,33 @@ function pickTlItem(page, keys, pass){
   }
   return null;
 }
-/* 从速查卡的「导航到这里」链接提取 to=lng,lat → 高德 marker 定位点链接。
+/* 从速查卡的「导航到这里」链接提取定位 href，优先级：坐标 > 关键词。
+   坐标卡（to=lng,lat）→ 高德 marker 定位点；关键词卡（data-keyword，如八一广场/安吉篇）
+   → 高德 search 搜索。两类在 handleMapLinkClick 里都会走 scheme 唤起高德 App。
    行程卡地址行 / 兜底卡地址都用它；按钮本身不再展示。 */
 function amapPinHref(rt){
   var nav = rt.querySelector('.poi-links a[href*="to="]');
-  if(!nav) return '';
-  var m = (nav.getAttribute('href') || '').match(/[?&]to=([0-9.]+),([0-9.]+),([^&]+)/);
-  if(!m) return '';
-  var nm = m[3]; try{ nm = decodeURIComponent(nm); }catch(err){}
-  return 'https://uri.amap.com/marker?position=' + m[1] + ',' + m[2] +
-    '&name=' + encodeURIComponent(nm) + '&src=tiantian&coordinate=gaode&callnative=1';
+  if(nav){
+    var m = (nav.getAttribute('href') || '').match(/[?&]to=([0-9.]+),([0-9.]+),([^&]+)/);
+    if(m){
+      var nm = m[3]; try{ nm = decodeURIComponent(nm); }catch(err){}
+      return 'https://uri.amap.com/marker?position=' + m[1] + ',' + m[2] +
+        '&name=' + encodeURIComponent(nm) + '&src=tiantian&coordinate=gaode&callnative=1';
+    }
+  }
+  /* 无坐标卡：data-keyword 属性 → 关键词搜索链接（手机端唤起高德 App 搜索） */
+  var kwA = rt.querySelector('.poi-links a[data-keyword]');
+  if(kwA){
+    var kw = (kwA.getAttribute('data-keyword') || '').trim();
+    if(kw) return 'https://uri.amap.com/search?keyword=' + encodeURIComponent(kw) + '&src=tiantian&callnative=1';
+  }
+  /* 再兜底：任何带 keyword= 的搜索链接，透传其关键词 */
+  var any = rt.querySelector('.poi-links a[href*="keyword="]');
+  if(any){
+    var km = (any.getAttribute('href') || '').match(/[?&]keyword=([^&]+)/);
+    if(km) return 'https://uri.amap.com/search?keyword=' + km[1] + '&src=tiantian&callnative=1';
+  }
+  return '';
 }
 /* 把 .rt-d 地址行变成高德定位点链接（有坐标才变，否则保持纯文本） */
 function linkifyAddr(rt, clone){
@@ -434,11 +451,13 @@ function buildHomeTab(view, parts){
   var ov = buildOverviewCards(parts, parts.daily);
   if(ov) wrap.appendChild(ov);
   var quick = el('ap-quick');
-  [['route','每日行程'],['money','交通与预算'],['food','餐饮推荐'],['prep','准备与图集']].forEach(function(q){
+  /* 主标题=底部 Tab 名（用户要求一致），灰色小字保留说明 */
+  [['route','行程','每日详细行程与路线图'],['money','预算','交通、门票与花费'],
+   ['food','美食','餐饮推荐'],['prep','前瞻','速查·提示·清单·天气']].forEach(function(q){
     var b = document.createElement('button');
     b.type = 'button';
     b.dataset.goto = q[0];
-    b.innerHTML = '<b>' + q[1] + '</b>';
+    b.innerHTML = '<b>' + q[1] + '</b><span class="q-sub">' + q[2] + '</span>';
     quick.appendChild(b);
   });
   wrap.appendChild(quick);
@@ -691,6 +710,64 @@ document.addEventListener('click', function(e){
 if(TTS.supported){ try{ window.speechSynthesis.getVoices(); }catch(err){} }  /* 提前触发声音列表加载 */
 
 /* ===== 建壳 ===== */
+
+/* 壳内 .ap-map-link 的 App 唤起：和 app.js 的 .poi-links 逻辑一致。
+   两类链接：uri.amap.com/marker?position=lng,lat → 坐标导航；
+            uri.amap.com/search?keyword=X     → 关键词搜索。
+   手机端：iosamap/androidamap scheme → baidumap scheme → 网页版兜底。
+   桌面：直接 window.open 网页版。 */
+function handleMapLinkClick(a){
+  var href = a.getAttribute('href') || '';
+  var UA = navigator.userAgent;
+  var isMobile = /android|iphone|ipad|ipod|harmony/i.test(UA);
+  var isIOS = /iphone|ipad|ipod/i.test(UA);
+  if(!isMobile){ window.open(href); return; }
+
+  function tryScheme(url, onFail){
+    var t0 = Date.now(), left = false;
+    function onHide(){ left = true; }
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', onHide);
+    setTimeout(function(){
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', onHide);
+      if(!left && Date.now()-t0 < 3000) onFail();
+    }, 1300);
+    location.href = url;
+  }
+
+  /* 坐标模式：marker?position=lng,lat&name=... */
+  var mk = href.match(/position=([0-9.]+),([0-9.]+)/);
+  if(mk){
+    var lon = mk[1], lat = mk[2];
+    var nm = (href.match(/name=([^&]+)/) || [])[1] || '';
+    try{ nm = decodeURIComponent(nm); }catch(err){}
+    var amap = (isIOS ? 'iosamap' : 'androidamap')
+      + '://viewMap?sourceApplication=tiantravel&poiname=' + encodeURIComponent(nm)
+      + '&lat=' + lat + '&lon=' + lon + '&dev=0';
+    var baidu = 'baidumap://map/direction?destination=name:' + encodeURIComponent(nm)
+      + '|latlng:' + lat + ',' + lon + '&mode=driving&coord_type=gcj02&src=tiantravel';
+    tryScheme(amap, function(){
+      tryScheme(baidu, function(){ window.open(href); });
+    });
+    return;
+  }
+
+  /* 关键词模式：search?keyword=X */
+  var kw = (href.match(/keyword=([^&]+)/) || [])[1] || '';
+  try{ kw = decodeURIComponent(kw); }catch(err){}
+  if(!kw){ window.open(href); return; }
+  var amap2 = (isIOS ? 'iosamap' : 'androidamap')
+    + '://poi?sourceApplication=tiantravel&keywords=' + encodeURIComponent(kw)
+    + '&dev=0' + (isIOS ? '' : '&pkg=com.autonavi.minimap');
+  var baidu2 = (isIOS ? 'baidumap' : 'bdapp')
+    + '://map/place/search?query=' + encodeURIComponent(kw)
+    + '&src=tiantravel';
+  tryScheme(amap2, function(){
+    tryScheme(baidu2, function(){ window.open(href); });
+  });
+}
+
 function buildShell(viewId){
   var view = document.getElementById('v-' + viewId);
   if(!view) return;
@@ -733,7 +810,20 @@ function buildShell(viewId){
   if(routeTab) built.route = routeTab;
   ['food','money','prep'].forEach(function(tab){
     var box = el('ap-tab');
-    (parts[tab] || []).forEach(function(sec){ cloneInto(sec, box); });
+    (parts[tab] || []).forEach(function(sec){
+      var isSpots = tab === 'prep' && sec === parts.spots;
+      var c = cloneInto(sec, box);
+      if(tab === 'prep'){
+        /* 「讲给娃听」已随速查卡内联进行程 Day 页，前瞻里不再重复 */
+        c.querySelectorAll('.story').forEach(function(x){ x.remove(); });
+        if(isSpots){
+          /* 前瞻里的速查卡：地址行同样转成高德链接（cloneInto 剥了 .poi-links，
+             所以要从原始卡的链接里取坐标/关键词再生成 href） */
+          var orig = sec.querySelectorAll('.rt'), cl = c.querySelectorAll('.rt');
+          for(var i = 0; i < cl.length && i < orig.length; i++) linkifyAddr(orig[i], cl[i]);
+        }
+      }
+    });
     if(tab === 'food') linkFoodMeals(box);   /* 店名 → 高德搜索定位 */
     if(box.children.length) built[tab] = box;
   });
@@ -761,14 +851,23 @@ function buildShell(viewId){
     try{ history.replaceState(history.state || {__tt:1}, '', '#/' + viewId + '?tab=' + id); }catch(err){}
   }
   tabWrap.addEventListener('click', function(e){
+    /* ① Tab 跳转 */
     var q = e.target.closest && e.target.closest('[data-goto]');
     if(q){
       e.preventDefault();
       showTab(q.getAttribute('data-goto'));
-      /* 带天索引的卡片（首页 Day 卡）：连对应 Day 页一起选中 */
       if(q.dataset.day != null && built.route && built.route.__selectDay){
         built.route.__selectDay(+q.dataset.day);
       }
+      return;
+    }
+    /* ② 壳内地图链接（.ap-map-link）：手机端唤起高德 App，失败唤起百度，再失败退回网页版。
+       和 app.js 里 .poi-links 的逻辑一致，但壳里按钮已被删、地址行本身就是链接，
+       所以这里单独拦截。 */
+    var ml = e.target.closest && e.target.closest('.ap-map-link');
+    if(ml){
+      e.preventDefault();
+      handleMapLinkClick(ml);
     }
   });
 
